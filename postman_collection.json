@@ -1,0 +1,417 @@
+{
+  "info": {
+    "_postman_id": "mini-erp-crm-collection-2026",
+    "name": "Mini ERP + CRM Operations Portal API",
+    "description": "Postman API Collection for Mini ERP + CRM Portal Case Study",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "POST Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "GET Auth Profile (/auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Customer CRM",
+      "item": [
+        {
+          "name": "GET List Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers?search=&customerType=&status=&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "customerType", "value": "" },
+                { "key": "status", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Vikram Sethi\",\n  \"mobile\": \"+91 9811223344\",\n  \"email\": \"vikram@sethitraders.com\",\n  \"businessName\": \"Sethi Traders & Co\",\n  \"gstNumber\": \"27AABCU1234R1ZP\",\n  \"customerType\": \"WHOLESALE\",\n  \"address\": \"Plot 10, Industrial Hub, Pune\",\n  \"status\": \"LEAD\",\n  \"notes\": \"Interested in bulk tool orders\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "GET Customer Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/cust-101",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "cust-101"]
+            }
+          }
+        },
+        {
+          "name": "PUT Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\",\n  \"notes\": \"Converted lead to active client\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/cust-101",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "cust-101"]
+            }
+          }
+        },
+        {
+          "name": "POST Add Follow-up Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Discussed Q4 pricing discounts and delivery terms.\",\n  \"nextFollowUpDate\": \"2026-10-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/cust-101/follow-ups",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "cust-101", "follow-ups"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Product Catalog",
+      "item": [
+        {
+          "name": "GET List Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products?search=&lowStockOnly=false&page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "lowStockOnly", "value": "false" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Industrial Angle Grinder 1100W\",\n  \"sku\": \"ELEC-GRN-110\",\n  \"category\": \"Power Tools\",\n  \"unitPrice\": 4299.0,\n  \"initialStock\": 30,\n  \"minimumStock\": 8,\n  \"warehouseLocation\": \"Rack C-05\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "GET Product Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/PROD_ID_HERE",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "PROD_ID_HERE"]
+            }
+          }
+        },
+        {
+          "name": "PUT Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitPrice\": 4499.0,\n  \"warehouseLocation\": \"Rack C-06\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/PROD_ID_HERE",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "PROD_ID_HERE"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Inventory Audit",
+      "item": [
+        {
+          "name": "GET Stock Movements Log",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/movements?movementType=&page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "movements"]
+            }
+          }
+        },
+        {
+          "name": "POST Create Manual Stock Movement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"PROD_ID_HERE\",\n  \"quantityChanged\": 10,\n  \"movementType\": \"IN\",\n  \"reason\": \"Purchase Restock Shipment PO-8821\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "movements"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Sales Challans Engine",
+      "item": [
+        {
+          "name": "GET List Challans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans?status=&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans"]
+            }
+          }
+        },
+        {
+          "name": "POST Create Sales Challan (Draft)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"cust-101\",\n  \"status\": \"DRAFT\",\n  \"items\": [\n    {\n      \"productId\": \"PROD_ID_HERE\",\n      \"quantity\": 5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans"]
+            }
+          }
+        },
+        {
+          "name": "GET Challan Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/CHALLAN_ID_HERE",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "CHALLAN_ID_HERE"]
+            }
+          }
+        },
+        {
+          "name": "PUT Update Challan Status (Confirm Order)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans/CHALLAN_ID_HERE",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "CHALLAN_ID_HERE"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
