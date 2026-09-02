@@ -174,7 +174,7 @@ export const ChallanDetailPage: React.FC = () => {
             <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Customer Contact</span>
             <div className="text-slate-800 font-medium">Mobile: {challan.customer?.mobile}</div>
             {challan.customer?.email && <div className="text-slate-600">Email: {challan.customer.email}</div>}
-            <div className="text-slate-600 mt-2">Customer Type: <strong className="text-slate-800">{challan.customer?.type}</strong></div>
+            <div className="text-slate-600 mt-2">Customer Type: <strong className="text-slate-800">{challan.customer?.customerType}</strong></div>
           </div>
         </div>
 

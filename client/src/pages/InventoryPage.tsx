@@ -92,8 +92,8 @@ export const InventoryPage: React.FC = () => {
       category: p.category,
       unitPrice: String(p.unitPrice),
       initialStock: String(p.currentStock),
-      minStockAlertQty: String(p.minStockAlertQty),
-      location: p.location,
+      minStockAlertQty: String(p.minimumStock),
+      location: p.warehouseLocation,
     });
     setProductError('');
     setIsProductModalOpen(true);

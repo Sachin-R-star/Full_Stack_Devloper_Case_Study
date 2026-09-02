@@ -90,7 +90,7 @@ export const CustomerListPage: React.FC = () => {
       email: c.email || '',
       businessName: c.businessName,
       gstNumber: c.gstNumber || '',
-      type: c.type,
+      type: c.customerType,
       address: c.address,
       status: c.status,
       followUpDate: c.followUpDate ? c.followUpDate.split('T')[0] : '',
