@@ -1,14 +1,15 @@
-import { Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { AppError } from '../middlewares/error.middleware';
 import { StockMovementType } from '@prisma/client';
 
-export const getProducts = async (req: AuthRequest, res: Response) => {
+export const getProducts = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { search, category, lowStockOnly, page = '1', limit = '50' } = req.query;
 
-    const pageNum = parseInt(page as string, 10) || 1;
-    const limitNum = parseInt(limit as string, 10) || 50;
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
 
     const where: any = {};
@@ -23,7 +24,7 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
     }
 
     if (category) {
-      where.category = category;
+      where.category = category as string;
     }
 
     const [total, products] = await Promise.all([
@@ -44,21 +45,21 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
       .filter((p) => (lowStockOnly === 'true' ? p.isLowStock : true));
 
     return res.json({
+      status: 'success',
       data: enrichedProducts,
       pagination: {
-        total: enrichedProducts.length,
+        total,
         page: pageNum,
         limit: limitNum,
         totalPages: Math.ceil(total / limitNum),
       },
     });
-  } catch (error: any) {
-    console.error('Error fetching products:', error);
-    return res.status(500).json({ message: 'Error fetching products', error: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const getProductById = async (req: AuthRequest, res: Response) => {
+export const getProductById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -76,37 +77,43 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      return next(new AppError('Product not found in catalog', 404));
     }
 
     return res.json({
+      status: 'success',
       product: {
         ...product,
         isLowStock: product.currentStock <= product.minimumStock,
       },
     });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error fetching product', error: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const createProduct = async (req: AuthRequest, res: Response) => {
+export const createProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { name, sku, category, unitPrice, initialStock = 0, minimumStock = 10, location, warehouseLocation } = req.body;
+    const {
+      name,
+      sku,
+      category,
+      unitPrice,
+      initialStock = 0,
+      minimumStock = 10,
+      warehouseLocation,
+    } = req.body;
 
-    if (!name || !sku || !category || unitPrice === undefined) {
-      return res.status(400).json({ message: 'Name, SKU, category, unit price are required.' });
-    }
-
-    const existingSku = await prisma.product.findUnique({ where: { sku: sku.toUpperCase().trim() } });
+    const existingSku = await prisma.product.findUnique({
+      where: { sku: sku.toUpperCase().trim() },
+    });
     if (existingSku) {
-      return res.status(400).json({ message: `SKU '${sku}' already exists.` });
+      return next(new AppError(`Product SKU '${sku}' already exists in catalog.`, 400));
     }
 
     const parsedPrice = parseFloat(unitPrice);
     const parsedStock = parseInt(initialStock, 10) || 0;
     const parsedMinStock = parseInt(minimumStock, 10) || 10;
-    const loc = warehouseLocation || location || 'Warehouse Main';
 
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({
@@ -117,7 +124,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
           unitPrice: parsedPrice,
           currentStock: parsedStock,
           minimumStock: parsedMinStock,
-          warehouseLocation: loc.trim(),
+          warehouseLocation: warehouseLocation.trim(),
         },
       });
 
@@ -136,135 +143,53 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
       return created;
     });
 
-    return res.status(201).json({ message: 'Product created successfully', product });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error creating product', error: error.message });
+    return res.status(201).json({
+      status: 'success',
+      message: 'Product created successfully',
+      product,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const updateProduct = async (req: AuthRequest, res: Response) => {
+export const updateProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { name, sku, category, unitPrice, minimumStock, location, warehouseLocation } = req.body;
+    const updateData = req.body;
 
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
-      return res.status(404).json({ message: 'Product not found' });
+      return next(new AppError('Product not found in catalog', 404));
     }
 
-    const loc = warehouseLocation || location;
+    if (updateData.sku && updateData.sku.toUpperCase().trim() !== existing.sku) {
+      const skuCheck = await prisma.product.findUnique({
+        where: { sku: updateData.sku.toUpperCase().trim() },
+      });
+      if (skuCheck) {
+        return next(new AppError(`SKU '${updateData.sku}' is already in use by another product.`, 400));
+      }
+    }
 
     const updated = await prisma.product.update({
       where: { id },
       data: {
-        ...(name && { name: name.trim() }),
-        ...(sku && { sku: sku.toUpperCase().trim() }),
-        ...(category && { category: category.trim() }),
-        ...(unitPrice !== undefined && { unitPrice: parseFloat(unitPrice) }),
-        ...(minimumStock !== undefined && { minimumStock: parseInt(minimumStock, 10) }),
-        ...(loc && { warehouseLocation: loc.trim() }),
+        ...(updateData.name && { name: updateData.name.trim() }),
+        ...(updateData.sku && { sku: updateData.sku.toUpperCase().trim() }),
+        ...(updateData.category && { category: updateData.category.trim() }),
+        ...(updateData.unitPrice !== undefined && { unitPrice: parseFloat(updateData.unitPrice) }),
+        ...(updateData.minimumStock !== undefined && { minimumStock: parseInt(updateData.minimumStock, 10) }),
+        ...(updateData.warehouseLocation && { warehouseLocation: updateData.warehouseLocation.trim() }),
       },
     });
-
-    return res.json({ message: 'Product updated successfully', product: updated });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error updating product', error: error.message });
-  }
-};
-
-export const adjustStock = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { quantity, movementType, reason } = req.body;
-
-    if (!quantity || !movementType || !reason) {
-      return res.status(400).json({ message: 'Quantity, movementType (IN/OUT), and reason are required.' });
-    }
-
-    const qty = parseInt(quantity, 10);
-    if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      const product = await tx.product.findUnique({ where: { id } });
-      if (!product) {
-        throw new Error('Product not found');
-      }
-
-      let newStock = product.currentStock;
-      if (movementType === 'IN') {
-        newStock += qty;
-      } else {
-        if (product.currentStock < qty) {
-          throw new Error(`Insufficient stock. Current stock is ${product.currentStock}`);
-        }
-        newStock -= qty;
-      }
-
-      const updatedProduct = await tx.product.update({
-        where: { id },
-        data: { currentStock: newStock },
-      });
-
-      const log = await tx.stockMovement.create({
-        data: {
-          productId: id,
-          quantityChanged: qty,
-          movementType: movementType as StockMovementType,
-          reason: reason.trim(),
-          createdById: req.user!.id,
-        },
-        include: {
-          createdBy: { select: { id: true, name: true, role: true } },
-        },
-      });
-
-      return { product: updatedProduct, log };
-    });
-
-    return res.json({ message: `Stock adjusted successfully`, ...result });
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message || 'Error adjusting stock' });
-  }
-};
-
-export const getStockMovements = async (req: AuthRequest, res: Response) => {
-  try {
-    const { productId, movementType, page = '1', limit = '50' } = req.query;
-
-    const pageNum = parseInt(page as string, 10) || 1;
-    const limitNum = parseInt(limit as string, 10) || 50;
-    const skip = (pageNum - 1) * limitNum;
-
-    const where: any = {};
-    if (productId) where.productId = productId as string;
-    if (movementType) where.movementType = movementType as StockMovementType;
-
-    const [total, logs] = await Promise.all([
-      prisma.stockMovement.count({ where }),
-      prisma.stockMovement.findMany({
-        where,
-        skip,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          product: { select: { id: true, name: true, sku: true, category: true } },
-          createdBy: { select: { id: true, name: true, role: true } },
-        },
-      }),
-    ]);
 
     return res.json({
-      data: logs,
-      pagination: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
-      },
+      status: 'success',
+      message: 'Product updated successfully',
+      product: updated,
     });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error fetching stock movements', error: error.message });
+  } catch (error) {
+    next(error);
   }
 };

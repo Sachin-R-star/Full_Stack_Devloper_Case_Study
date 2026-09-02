@@ -1,6 +1,7 @@
-import { Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { AppError } from '../middlewares/error.middleware';
 import { ChallanStatus, StockMovementType } from '@prisma/client';
 
 const generateChallanNumber = async (): Promise<string> => {
@@ -26,12 +27,12 @@ const generateChallanNumber = async (): Promise<string> => {
   return `${prefix}${paddedSeq}`;
 };
 
-export const getChallans = async (req: AuthRequest, res: Response) => {
+export const getChallans = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status, customerId, search, page = '1', limit = '20' } = req.query;
 
-    const pageNum = parseInt(page as string, 10) || 1;
-    const limitNum = parseInt(limit as string, 10) || 20;
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
     const where: any = {};
@@ -69,6 +70,7 @@ export const getChallans = async (req: AuthRequest, res: Response) => {
     ]);
 
     return res.json({
+      status: 'success',
       data: challans,
       pagination: {
         total,
@@ -77,13 +79,12 @@ export const getChallans = async (req: AuthRequest, res: Response) => {
         totalPages: Math.ceil(total / limitNum),
       },
     });
-  } catch (error: any) {
-    console.error('Error fetching sales challans:', error);
-    return res.status(500).json({ message: 'Error fetching sales challans', error: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const getChallanById = async (req: AuthRequest, res: Response) => {
+export const getChallanById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -101,34 +102,26 @@ export const getChallanById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!challan) {
-      return res.status(404).json({ message: 'Sales challan not found' });
+      return next(new AppError('Sales challan not found', 404));
     }
 
-    return res.json({ challan });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error fetching challan details', error: error.message });
+    return res.json({ status: 'success', challan });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const createChallan = async (req: AuthRequest, res: Response) => {
+export const createChallan = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { customerId, items, status = 'DRAFT' } = req.body;
 
-    if (!customerId) {
-      return res.status(400).json({ message: 'Customer ID is required.' });
-    }
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: 'At least one product item is required.' });
-    }
-
     if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
+      return next(new AppError('Authentication required', 401));
     }
 
     const customer = await prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) {
-      return res.status(404).json({ message: 'Customer not found.' });
+      return next(new AppError('Selected customer does not exist.', 404));
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -146,13 +139,19 @@ export const createChallan = async (req: AuthRequest, res: Response) => {
       for (const item of items) {
         const product = productMap.get(item.productId);
         if (!product) {
-          throw new Error(`Product with ID '${item.productId}' not found.`);
+          throw new AppError(`Product with ID '${item.productId}' not found.`, 404);
         }
 
         const qty = parseInt(item.quantity, 10);
+        if (isNaN(qty) || qty <= 0) {
+          throw new AppError(`Invalid quantity for product '${product.name}'.`, 400);
+        }
+
+        // If status is CONFIRMED, validate stock for ALL products before updating
         if (status === 'CONFIRMED' && product.currentStock < qty) {
-          throw new Error(
-            `Insufficient stock for product '${product.name}' (SKU: ${product.sku}). Available: ${product.currentStock}, Requested: ${qty}.`
+          throw new AppError(
+            `Insufficient stock for product '${product.name}' (SKU: ${product.sku}). Available: ${product.currentStock}, Requested: ${qty}. Transaction aborted to prevent negative stock.`,
+            400
           );
         }
 
@@ -162,6 +161,7 @@ export const createChallan = async (req: AuthRequest, res: Response) => {
         totalQuantity += qty;
         totalAmount += subtotal;
 
+        // Product snapshot preservation
         challanItemsData.push({
           productId: product.id,
           productNameSnapshot: product.name,
@@ -192,6 +192,7 @@ export const createChallan = async (req: AuthRequest, res: Response) => {
         },
       });
 
+      // If CONFIRMED, atomic stock deduction & OUT movement log
       if (status === 'CONFIRMED') {
         for (const item of challanItemsData) {
           await tx.product.update({
@@ -217,21 +218,22 @@ export const createChallan = async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(201).json({
+      status: 'success',
       message: `Sales Challan ${result.challanNumber} created successfully (${result.status})`,
       challan: result,
     });
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message || 'Error creating sales challan' });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const updateChallanStatus = async (req: AuthRequest, res: Response) => {
+export const updateChallan = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
+      return next(new AppError('Authentication required', 401));
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -241,25 +243,37 @@ export const updateChallanStatus = async (req: AuthRequest, res: Response) => {
       });
 
       if (!challan) {
-        throw new Error('Sales challan not found');
+        throw new AppError('Sales challan not found', 404);
       }
 
       if (challan.status === status) {
         return challan;
       }
 
+      if (challan.status === 'CANCELLED') {
+        throw new AppError('Cancelled challans cannot be reactivated.', 400);
+      }
+
+      // Transition DRAFT -> CONFIRMED
       if (challan.status === 'DRAFT' && status === 'CONFIRMED') {
         for (const item of challan.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
           if (!product || product.currentStock < item.quantity) {
-            throw new Error(`Insufficient stock for item '${item.productNameSnapshot}'`);
+            throw new AppError(
+              `Insufficient stock for item '${item.productNameSnapshot}'. Available: ${
+                product?.currentStock || 0
+              }, Requested: ${item.quantity}. Transaction aborted.`,
+              400
+            );
           }
 
+          // Atomic stock decrement
           await tx.product.update({
             where: { id: item.productId },
             data: { currentStock: { decrement: item.quantity } },
           });
 
+          // Log OUT movement
           await tx.stockMovement.create({
             data: {
               productId: item.productId,
@@ -272,13 +286,16 @@ export const updateChallanStatus = async (req: AuthRequest, res: Response) => {
         }
       }
 
+      // Transition CONFIRMED -> CANCELLED (Restocks items, does NOT reduce stock)
       if (challan.status === 'CONFIRMED' && status === 'CANCELLED') {
         for (const item of challan.items) {
+          // Restore stock
           await tx.product.update({
             where: { id: item.productId },
             data: { currentStock: { increment: item.quantity } },
           });
 
+          // Log IN movement
           await tx.stockMovement.create({
             data: {
               productId: item.productId,
@@ -301,10 +318,11 @@ export const updateChallanStatus = async (req: AuthRequest, res: Response) => {
     });
 
     return res.json({
+      status: 'success',
       message: `Challan ${updated.challanNumber} status updated to ${updated.status}`,
       challan: updated,
     });
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message || 'Error updating challan status' });
+  } catch (error) {
+    next(error);
   }
 };

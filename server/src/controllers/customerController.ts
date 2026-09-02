@@ -1,13 +1,15 @@
-import { Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { AppError } from '../middlewares/error.middleware';
+import { CustomerType, CustomerStatus } from '@prisma/client';
 
-export const getCustomers = async (req: AuthRequest, res: Response) => {
+export const getCustomers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { search, type, status, page = '1', limit = '20' } = req.query;
+    const { search, customerType, status, page = '1', limit = '20' } = req.query;
 
-    const pageNum = parseInt(page as string, 10) || 1;
-    const limitNum = parseInt(limit as string, 10) || 20;
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
     const where: any = {};
@@ -22,12 +24,12 @@ export const getCustomers = async (req: AuthRequest, res: Response) => {
       ];
     }
 
-    if (type) {
-      where.customerType = type;
+    if (customerType) {
+      where.customerType = customerType as CustomerType;
     }
 
     if (status) {
-      where.status = status;
+      where.status = status as CustomerStatus;
     }
 
     const [total, customers] = await Promise.all([
@@ -46,6 +48,7 @@ export const getCustomers = async (req: AuthRequest, res: Response) => {
     ]);
 
     return res.json({
+      status: 'success',
       data: customers,
       pagination: {
         total,
@@ -54,13 +57,12 @@ export const getCustomers = async (req: AuthRequest, res: Response) => {
         totalPages: Math.ceil(total / limitNum),
       },
     });
-  } catch (error: any) {
-    console.error('Error fetching customers:', error);
-    return res.status(500).json({ message: 'Error fetching customers', error: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const getCustomerById = async (req: AuthRequest, res: Response) => {
+export const getCustomerById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -89,16 +91,16 @@ export const getCustomerById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!customer) {
-      return res.status(404).json({ message: 'Customer not found' });
+      return next(new AppError('Customer record not found', 404));
     }
 
-    return res.json({ customer });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error fetching customer details', error: error.message });
+    return res.json({ status: 'success', customer });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const createCustomer = async (req: AuthRequest, res: Response) => {
+export const createCustomer = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const {
       name,
@@ -106,17 +108,12 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       email,
       businessName,
       gstNumber,
-      customerType,
-      type,
+      customerType = 'RETAIL',
       address,
       status = 'LEAD',
       followUpDate,
       notes,
     } = req.body;
-
-    if (!name || !mobile || !businessName || !address) {
-      return res.status(400).json({ message: 'Name, mobile, business name, and address are required.' });
-    }
 
     const customer = await prisma.customer.create({
       data: {
@@ -125,82 +122,66 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
         email: email || null,
         businessName,
         gstNumber: gstNumber || null,
-        customerType: customerType || type || 'RETAIL',
+        customerType: customerType as CustomerType,
         address,
-        status,
+        status: status as CustomerStatus,
         followUpDate: followUpDate ? new Date(followUpDate) : null,
         notes: notes || null,
       },
     });
 
-    return res.status(201).json({ message: 'Customer created successfully', customer });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error creating customer', error: error.message });
+    return res.status(201).json({
+      status: 'success',
+      message: 'Customer created successfully',
+      customer,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const updateCustomer = async (req: AuthRequest, res: Response) => {
+export const updateCustomer = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const {
-      name,
-      mobile,
-      email,
-      businessName,
-      gstNumber,
-      customerType,
-      type,
-      address,
-      status,
-      followUpDate,
-      notes,
-    } = req.body;
+    const updateData = req.body;
 
     const existing = await prisma.customer.findUnique({ where: { id } });
     if (!existing) {
-      return res.status(404).json({ message: 'Customer not found' });
+      return next(new AppError('Customer record not found', 404));
     }
-
-    const cType = customerType || type;
 
     const updatedCustomer = await prisma.customer.update({
       where: { id },
       data: {
-        ...(name !== undefined && { name }),
-        ...(mobile !== undefined && { mobile }),
-        ...(email !== undefined && { email: email || null }),
-        ...(businessName !== undefined && { businessName }),
-        ...(gstNumber !== undefined && { gstNumber: gstNumber || null }),
-        ...(cType !== undefined && { customerType: cType }),
-        ...(address !== undefined && { address }),
-        ...(status !== undefined && { status }),
-        ...(followUpDate !== undefined && { followUpDate: followUpDate ? new Date(followUpDate) : null }),
-        ...(notes !== undefined && { notes: notes || null }),
+        ...updateData,
+        ...(updateData.followUpDate !== undefined && {
+          followUpDate: updateData.followUpDate ? new Date(updateData.followUpDate) : null,
+        }),
       },
     });
 
-    return res.json({ message: 'Customer updated successfully', customer: updatedCustomer });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error updating customer', error: error.message });
+    return res.json({
+      status: 'success',
+      message: 'Customer updated successfully',
+      customer: updatedCustomer,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
-export const addFollowUpNote = async (req: AuthRequest, res: Response) => {
+export const addFollowUpNote = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { note, nextFollowUpDate } = req.body;
 
-    if (!note || !note.trim()) {
-      return res.status(400).json({ message: 'Follow-up note content is required.' });
-    }
-
     if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
+      return next(new AppError('Authentication required', 401));
     }
 
     const customer = await prisma.customer.findUnique({ where: { id } });
     if (!customer) {
-      return res.status(404).json({ message: 'Customer not found' });
+      return next(new AppError('Customer record not found', 404));
     }
 
     const [followUpNote] = await prisma.$transaction([
@@ -223,8 +204,12 @@ export const addFollowUpNote = async (req: AuthRequest, res: Response) => {
       }),
     ]);
 
-    return res.status(201).json({ message: 'Follow-up note added', followUpNote });
-  } catch (error: any) {
-    return res.status(500).json({ message: 'Error adding follow-up note', error: error.message });
+    return res.status(201).json({
+      status: 'success',
+      message: 'Follow-up note logged successfully',
+      followUpNote,
+    });
+  } catch (error) {
+    next(error);
   }
 };
