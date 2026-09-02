@@ -48,7 +48,7 @@ export const CustomerListPage: React.FC = () => {
     try {
       const params: any = {};
       if (search) params.search = search;
-      if (typeFilter) params.type = typeFilter;
+      if (typeFilter) params.customerType = typeFilter;
       if (statusFilter) params.status = statusFilter;
 
       const res = await api.get('/customers', { params });

@@ -104,11 +104,21 @@ export const InventoryPage: React.FC = () => {
     setProductError('');
     setSavingProduct(true);
 
+    const payload = {
+      name: productForm.name,
+      sku: productForm.sku,
+      category: productForm.category,
+      unitPrice: Number(productForm.unitPrice),
+      initialStock: Number(productForm.initialStock),
+      minimumStock: Number(productForm.minStockAlertQty),
+      warehouseLocation: productForm.location,
+    };
+
     try {
       if (editingProduct) {
-        await api.put(`/products/${editingProduct.id}`, productForm);
+        await api.put(`/products/${editingProduct.id}`, payload);
       } else {
-        await api.post('/products', productForm);
+        await api.post('/products', payload);
       }
       setIsProductModalOpen(false);
       fetchProducts();
@@ -138,7 +148,12 @@ export const InventoryPage: React.FC = () => {
     setSavingAdjust(true);
 
     try {
-      await api.post(`/products/${adjustingProduct.id}/stock`, adjustForm);
+      await api.post('/inventory/movements', {
+        productId: adjustingProduct.id,
+        quantityChanged: Number(adjustForm.quantity),
+        movementType: adjustForm.movementType,
+        reason: adjustForm.reason,
+      });
       setIsAdjustModalOpen(false);
       fetchProducts();
     } catch (err: any) {

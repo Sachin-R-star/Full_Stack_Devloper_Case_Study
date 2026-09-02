@@ -14,7 +14,7 @@ export const StockMovementPage: React.FC = () => {
       const params: any = {};
       if (movementFilter) params.movementType = movementFilter;
 
-      const res = await api.get('/products/movements', { params });
+      const res = await api.get('/inventory/movements', { params });
       setLogs(res.data.data);
     } catch (err) {
       console.error('Error fetching stock movements:', err);
