@@ -3,16 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { Challan, ChallanItem } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { ConfirmModal } from '../components/ConfirmModal';
 import {
   ArrowLeft,
   Printer,
   CheckCircle,
   XCircle,
-  Building,
-  User as UserIcon,
-  Calendar,
   AlertCircle,
-  FileText,
 } from 'lucide-react';
 
 export const ChallanDetailPage: React.FC = () => {
@@ -23,6 +20,9 @@ export const ChallanDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
+
+  // Confirm Modal state
+  const [pendingStatus, setPendingStatus] = useState<'CONFIRMED' | 'CANCELLED' | null>(null);
 
   const fetchChallan = async () => {
     try {
@@ -39,15 +39,18 @@ export const ChallanDetailPage: React.FC = () => {
     fetchChallan();
   }, [id]);
 
-  const handleStatusChange = async (newStatus: 'CONFIRMED' | 'CANCELLED') => {
+  const handleConfirmStatusChange = async () => {
+    if (!pendingStatus) return;
+
     setError('');
     setUpdating(true);
 
     try {
-      await api.patch(`/challans/${id}/status`, { status: newStatus });
+      await api.put(`/challans/${id}`, { status: pendingStatus });
+      setPendingStatus(null);
       fetchChallan();
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to update status to ${newStatus}.`);
+      setError(err.response?.data?.message || `Failed to update status to ${pendingStatus}.`);
     } finally {
       setUpdating(false);
     }
@@ -58,7 +61,7 @@ export const ChallanDetailPage: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-slate-500 text-sm">Loading sales challan document...</div>;
+    return <div className="text-center py-12 text-slate-500 text-sm font-medium">Loading sales challan document...</div>;
   }
 
   if (!challan) {
@@ -74,7 +77,6 @@ export const ChallanDetailPage: React.FC = () => {
 
   const isDraft = challan.status === 'DRAFT';
   const isConfirmed = challan.status === 'CONFIRMED';
-  const isCancelled = challan.status === 'CANCELLED';
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -109,28 +111,28 @@ export const ChallanDetailPage: React.FC = () => {
             className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-3.5 py-2 rounded-lg transition-colors"
           >
             <Printer className="h-4 w-4" />
-            <span>Print Challan</span>
+            <span>Print Document</span>
           </button>
 
           {isDraft && hasRole(['ADMIN', 'SALES', 'ACCOUNTS']) && (
             <button
-              onClick={() => handleStatusChange('CONFIRMED')}
+              onClick={() => setPendingStatus('CONFIRMED')}
               disabled={updating}
               className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow-sm disabled:opacity-50 transition-colors"
             >
               <CheckCircle className="h-4 w-4" />
-              <span>{updating ? 'Confirming...' : 'Confirm Order & Deduct Stock'}</span>
+              <span>Confirm Order & Deduct Stock</span>
             </button>
           )}
 
           {isConfirmed && hasRole(['ADMIN', 'ACCOUNTS']) && (
             <button
-              onClick={() => handleStatusChange('CANCELLED')}
+              onClick={() => setPendingStatus('CANCELLED')}
               disabled={updating}
               className="inline-flex items-center space-x-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold text-xs px-3.5 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               <XCircle className="h-4 w-4 text-red-600" />
-              <span>{updating ? 'Cancelling...' : 'Cancel Order & Restock'}</span>
+              <span>Cancel Order & Restock</span>
             </button>
           )}
         </div>
@@ -143,13 +145,12 @@ export const ChallanDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Printable Challan Document Card */}
+      {/* Printable Document View */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-8 print:shadow-none print:border-none print:p-0">
-        {/* Document Header */}
         <div className="flex justify-between items-start border-b border-slate-200 pb-6">
           <div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">SALES CHALLAN</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">Nexus Wholesale & Distribution Operations</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Nexus Wholesale Operations Portal</p>
           </div>
           <div className="text-right space-y-1">
             <div className="text-lg font-mono font-bold text-brand-600">{challan.challanNumber}</div>
@@ -158,10 +159,9 @@ export const ChallanDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Customer Info Section */}
         <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
           <div>
-            <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Billed To (Customer)</span>
+            <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Customer Info</span>
             <div className="font-bold text-slate-900 text-sm">{challan.customer?.name}</div>
             <div className="text-slate-700 font-medium">{challan.customer?.businessName}</div>
             <div className="text-slate-600 mt-1">{challan.customer?.address}</div>
@@ -171,14 +171,13 @@ export const ChallanDetailPage: React.FC = () => {
           </div>
 
           <div className="text-right space-y-1">
-            <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Customer Contact</span>
+            <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Contact Details</span>
             <div className="text-slate-800 font-medium">Mobile: {challan.customer?.mobile}</div>
             {challan.customer?.email && <div className="text-slate-600">Email: {challan.customer.email}</div>}
             <div className="text-slate-600 mt-2">Customer Type: <strong className="text-slate-800">{challan.customer?.customerType}</strong></div>
           </div>
         </div>
 
-        {/* Snapshot Items Table */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Item Breakdown</h3>
 
@@ -214,7 +213,6 @@ export const ChallanDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Totals Summary */}
         <div className="flex justify-end pt-4 border-t border-slate-200">
           <div className="w-64 space-y-2 text-xs">
             <div className="flex justify-between text-slate-600">
@@ -227,19 +225,23 @@ export const ChallanDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Footer Signatures */}
-        <div className="pt-12 grid grid-cols-2 gap-8 text-xs text-slate-400 border-t border-slate-100">
-          <div>
-            <div className="h-12 border-b border-slate-300 w-48 mb-1" />
-            <span>Authorized Signature / Receiver</span>
-          </div>
-          <div className="text-right flex flex-col items-end">
-            <div className="h-12 border-b border-slate-300 w-48 mb-1" />
-            <span>Dispatch Warehouse In-charge</span>
-          </div>
-        </div>
       </div>
+
+      {/* Action Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(pendingStatus)}
+        title={pendingStatus === 'CONFIRMED' ? 'Confirm Sales Challan' : 'Cancel Sales Challan'}
+        message={
+          pendingStatus === 'CONFIRMED'
+            ? 'Are you sure you want to confirm this sales challan? Stock levels for all items will be automatically reduced.'
+            : 'Are you sure you want to cancel this confirmed order? Stock levels will be restored to inventory.'
+        }
+        confirmText={pendingStatus === 'CONFIRMED' ? 'Confirm & Deduct Stock' : 'Cancel & Restock'}
+        confirmVariant={pendingStatus === 'CONFIRMED' ? 'success' : 'danger'}
+        loading={updating}
+        onConfirm={handleConfirmStatusChange}
+        onCancel={() => setPendingStatus(null)}
+      />
     </div>
   );
 };

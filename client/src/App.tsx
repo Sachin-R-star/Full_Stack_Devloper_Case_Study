@@ -21,8 +21,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: Role[
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm">
-        Loading session context...
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm font-medium">
+        Validating session token...
       </div>
     );
   }
@@ -34,10 +34,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: Role[
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return (
       <Layout>
-        <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl text-center space-y-2">
-          <h3 className="font-bold text-base">403 Access Denied</h3>
+        <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl text-center space-y-2 max-w-xl mx-auto my-12">
+          <h3 className="font-bold text-base">403 Access Forbidden</h3>
           <p className="text-xs">
-            Your role (<strong className="uppercase">{user.role}</strong>) does not have permission to view this section.
+            Your current role (<strong className="uppercase">{user.role}</strong>) does not have authorization for this module.
           </p>
         </div>
       </Layout>
@@ -82,7 +82,7 @@ export const App: React.FC = () => {
           />
 
           <Route
-            path="/inventory"
+            path="/products"
             element={
               <ProtectedRoute>
                 <InventoryPage />
@@ -91,7 +91,7 @@ export const App: React.FC = () => {
           />
 
           <Route
-            path="/inventory/movements"
+            path="/inventory"
             element={
               <ProtectedRoute>
                 <StockMovementPage />
