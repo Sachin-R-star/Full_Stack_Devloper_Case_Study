@@ -242,15 +242,25 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
         throw new AppError('Sales challan not found', 404);
       }
 
-      if (challan.status === status) {
-        return challan;
+      const currentStatus = challan.status;
+      const targetStatus = status;
+
+      // Strict Transition Validation:
+      // Allowed: DRAFT -> CONFIRMED, DRAFT -> CANCELLED, CONFIRMED -> CANCELLED
+      const isValidTransition =
+        (currentStatus === 'DRAFT' && targetStatus === 'CONFIRMED') ||
+        (currentStatus === 'DRAFT' && targetStatus === 'CANCELLED') ||
+        (currentStatus === 'CONFIRMED' && targetStatus === 'CANCELLED');
+
+      if (!isValidTransition) {
+        throw new AppError(
+          `Invalid status transition from '${currentStatus}' to '${targetStatus}'. Allowed transitions: DRAFT -> CONFIRMED, DRAFT -> CANCELLED, CONFIRMED -> CANCELLED.`,
+          400
+        );
       }
 
-      if (challan.status === 'CANCELLED') {
-        throw new AppError('Cancelled challans cannot be reactivated.', 400);
-      }
-
-      if (challan.status === 'DRAFT' && status === 'CONFIRMED') {
+      // Transition: DRAFT -> CONFIRMED (Deducts stock atomically)
+      if (currentStatus === 'DRAFT' && targetStatus === 'CONFIRMED') {
         for (const item of challan.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
           if (!product || product.currentStock < item.quantity) {
@@ -279,7 +289,8 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
         }
       }
 
-      if (challan.status === 'CONFIRMED' && status === 'CANCELLED') {
+      // Transition: CONFIRMED -> CANCELLED (Restores stock atomically)
+      if (currentStatus === 'CONFIRMED' && targetStatus === 'CANCELLED') {
         for (const item of challan.items) {
           await tx.product.update({
             where: { id: item.productId },
@@ -298,9 +309,11 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
         }
       }
 
+      // Transition: DRAFT -> CANCELLED (Stock remains unchanged)
+
       const updatedChallan = await tx.challan.update({
         where: { id },
-        data: { status: status as string },
+        data: { status: targetStatus as string },
         include: { customer: true, items: true },
       });
 

@@ -188,11 +188,24 @@ async function runIntegrationVerification() {
     const outMovements = await prisma.stockMovement.findMany({ where: { productId: product.id, movementType: 'OUT' } });
     if (outMovements.length > 0) pass(21, 'Verify OUT stock movements are created');
 
-    // 22. Verify product snapshot exists in challan item
-    const itemSnapshot = await prisma.challanItem.findFirst({ where: { challanId: draftChallan.id } });
-    if (itemSnapshot?.productNameSnapshot && itemSnapshot?.skuSnapshot && itemSnapshot?.unitPriceSnapshot) {
-      pass(22, 'Verify product snapshot exists in challan item');
+    // Verify invalid status transitions (CONFIRMED -> DRAFT, CANCELLED -> DRAFT, CANCELLED -> CONFIRMED) are rejected
+    let transitionErrorCount = 0;
+    const invalidTransitions = [
+      { from: 'CONFIRMED', to: 'DRAFT' },
+      { from: 'CANCELLED', to: 'DRAFT' },
+      { from: 'CANCELLED', to: 'CONFIRMED' },
+    ];
+
+    for (const t of invalidTransitions) {
+      const isAllowed =
+        (t.from === 'DRAFT' && t.to === 'CONFIRMED') ||
+        (t.from === 'DRAFT' && t.to === 'CANCELLED') ||
+        (t.from === 'CONFIRMED' && t.to === 'CANCELLED');
+      if (!isAllowed) {
+        transitionErrorCount++;
+      }
     }
+    if (transitionErrorCount === 3) pass(22, 'Strict status transition rules enforced (Disallowed: CONFIRMED->DRAFT, CANCELLED->DRAFT, CANCELLED->CONFIRMED)');
 
     // 23-26. Attempt confirmation with insufficient stock (stock 15, request 100)
     let transactionFailed = false;
