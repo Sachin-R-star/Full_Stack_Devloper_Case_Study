@@ -250,7 +250,7 @@ export const CustomerListPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 font-medium text-slate-700">
                       <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[11px]">
-                        {c.type}
+                        {c.customerType}
                       </span>
                     </td>
                     <td className="py-3 px-4">

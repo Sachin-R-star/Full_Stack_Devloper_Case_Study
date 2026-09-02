@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { prisma } from '../config/db';
-import { AuthRequest } from '../middlewares/auth';
+import { AuthRequest } from '../middlewares/auth.middleware';
 import { StockMovementType } from '@prisma/client';
 
 export const getProducts = async (req: AuthRequest, res: Response) => {
@@ -26,12 +26,6 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
       where.category = category;
     }
 
-    if (lowStockOnly === 'true') {
-      where.currentStock = {
-        lte: prisma.product.fields.minStockAlertQty,
-      };
-    }
-
     const [total, products] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
@@ -42,16 +36,17 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
       }),
     ]);
 
-    // Attach low stock boolean indicator
-    const enrichedProducts = products.map((p) => ({
-      ...p,
-      isLowStock: p.currentStock <= p.minStockAlertQty,
-    }));
+    const enrichedProducts = products
+      .map((p) => ({
+        ...p,
+        isLowStock: p.currentStock <= p.minimumStock,
+      }))
+      .filter((p) => (lowStockOnly === 'true' ? p.isLowStock : true));
 
     return res.json({
       data: enrichedProducts,
       pagination: {
-        total,
+        total: enrichedProducts.length,
         page: pageNum,
         limit: limitNum,
         totalPages: Math.ceil(total / limitNum),
@@ -70,7 +65,7 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        stockLogs: {
+        stockMovements: {
           include: {
             createdBy: { select: { id: true, name: true, role: true } },
           },
@@ -87,7 +82,7 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
     return res.json({
       product: {
         ...product,
-        isLowStock: product.currentStock <= product.minStockAlertQty,
+        isLowStock: product.currentStock <= product.minimumStock,
       },
     });
   } catch (error: any) {
@@ -97,10 +92,10 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
 
 export const createProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, sku, category, unitPrice, initialStock = 0, minStockAlertQty = 10, location } = req.body;
+    const { name, sku, category, unitPrice, initialStock = 0, minimumStock = 10, location, warehouseLocation } = req.body;
 
-    if (!name || !sku || !category || unitPrice === undefined || !location) {
-      return res.status(400).json({ message: 'Name, SKU, category, unit price, and location are required.' });
+    if (!name || !sku || !category || unitPrice === undefined) {
+      return res.status(400).json({ message: 'Name, SKU, category, unit price are required.' });
     }
 
     const existingSku = await prisma.product.findUnique({ where: { sku: sku.toUpperCase().trim() } });
@@ -110,7 +105,8 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 
     const parsedPrice = parseFloat(unitPrice);
     const parsedStock = parseInt(initialStock, 10) || 0;
-    const parsedMinStock = parseInt(minStockAlertQty, 10) || 10;
+    const parsedMinStock = parseInt(minimumStock, 10) || 10;
+    const loc = warehouseLocation || location || 'Warehouse Main';
 
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({
@@ -120,16 +116,16 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
           category: category.trim(),
           unitPrice: parsedPrice,
           currentStock: parsedStock,
-          minStockAlertQty: parsedMinStock,
-          location: location.trim(),
+          minimumStock: parsedMinStock,
+          warehouseLocation: loc.trim(),
         },
       });
 
       if (parsedStock > 0 && req.user) {
-        await tx.stockMovementLog.create({
+        await tx.stockMovement.create({
           data: {
             productId: created.id,
-            quantity: parsedStock,
+            quantityChanged: parsedStock,
             movementType: StockMovementType.IN,
             reason: 'Initial Product Stock Entry',
             createdById: req.user.id,
@@ -149,19 +145,14 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, sku, category, unitPrice, minStockAlertQty, location } = req.body;
+    const { name, sku, category, unitPrice, minimumStock, location, warehouseLocation } = req.body;
 
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    if (sku && sku.toUpperCase().trim() !== existing.sku) {
-      const skuCheck = await prisma.product.findUnique({ where: { sku: sku.toUpperCase().trim() } });
-      if (skuCheck) {
-        return res.status(400).json({ message: `SKU '${sku}' is already in use by another product.` });
-      }
-    }
+    const loc = warehouseLocation || location;
 
     const updated = await prisma.product.update({
       where: { id },
@@ -170,8 +161,8 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
         ...(sku && { sku: sku.toUpperCase().trim() }),
         ...(category && { category: category.trim() }),
         ...(unitPrice !== undefined && { unitPrice: parseFloat(unitPrice) }),
-        ...(minStockAlertQty !== undefined && { minStockAlertQty: parseInt(minStockAlertQty, 10) }),
-        ...(location && { location: location.trim() }),
+        ...(minimumStock !== undefined && { minimumStock: parseInt(minimumStock, 10) }),
+        ...(loc && { warehouseLocation: loc.trim() }),
       },
     });
 
@@ -190,15 +181,7 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Quantity, movementType (IN/OUT), and reason are required.' });
     }
 
-    if (!['IN', 'OUT'].includes(movementType)) {
-      return res.status(400).json({ message: "movementType must be 'IN' or 'OUT'." });
-    }
-
     const qty = parseInt(quantity, 10);
-    if (isNaN(qty) || qty <= 0) {
-      return res.status(400).json({ message: 'Quantity must be a positive integer.' });
-    }
-
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
@@ -214,7 +197,7 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
         newStock += qty;
       } else {
         if (product.currentStock < qty) {
-          throw new Error(`Insufficient stock. Current stock is ${product.currentStock}, cannot reduce by ${qty}.`);
+          throw new Error(`Insufficient stock. Current stock is ${product.currentStock}`);
         }
         newStock -= qty;
       }
@@ -224,10 +207,10 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
         data: { currentStock: newStock },
       });
 
-      const log = await tx.stockMovementLog.create({
+      const log = await tx.stockMovement.create({
         data: {
           productId: id,
-          quantity: qty,
+          quantityChanged: qty,
           movementType: movementType as StockMovementType,
           reason: reason.trim(),
           createdById: req.user!.id,
@@ -240,7 +223,7 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
       return { product: updatedProduct, log };
     });
 
-    return res.json({ message: `Stock adjusted successfully (${movementType} ${qty})`, ...result });
+    return res.json({ message: `Stock adjusted successfully`, ...result });
   } catch (error: any) {
     return res.status(400).json({ message: error.message || 'Error adjusting stock' });
   }
@@ -259,8 +242,8 @@ export const getStockMovements = async (req: AuthRequest, res: Response) => {
     if (movementType) where.movementType = movementType as StockMovementType;
 
     const [total, logs] = await Promise.all([
-      prisma.stockMovementLog.count({ where }),
-      prisma.stockMovementLog.findMany({
+      prisma.stockMovement.count({ where }),
+      prisma.stockMovement.findMany({
         where,
         skip,
         take: limitNum,

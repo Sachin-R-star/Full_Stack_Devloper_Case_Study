@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { prisma } from '../config/db';
-import { AuthRequest } from '../middlewares/auth';
+import { AuthRequest } from '../middlewares/auth.middleware';
 
 export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
   try {
@@ -19,11 +19,11 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
       prisma.customer.count({ where: { status: 'LEAD' } }),
       prisma.customer.count({ where: { status: 'ACTIVE' } }),
       prisma.product.count(),
-      prisma.product.findMany({ select: { id: true, currentStock: true, minStockAlertQty: true } }),
-      prisma.salesChallan.count(),
-      prisma.salesChallan.count({ where: { status: 'DRAFT' } }),
-      prisma.salesChallan.count({ where: { status: 'CONFIRMED' } }),
-      prisma.stockMovementLog.findMany({
+      prisma.product.findMany({ select: { id: true, currentStock: true, minimumStock: true } }),
+      prisma.challan.count(),
+      prisma.challan.count({ where: { status: 'DRAFT' } }),
+      prisma.challan.count({ where: { status: 'CONFIRMED' } }),
+      prisma.stockMovement.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
@@ -33,10 +33,9 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
       }),
     ]);
 
-    const lowStockCount = allProducts.filter((p) => p.currentStock <= p.minStockAlertQty).length;
+    const lowStockCount = allProducts.filter((p) => p.currentStock <= p.minimumStock).length;
 
-    // Calculate total confirmed revenue
-    const confirmedTotalSum = await prisma.salesChallan.aggregate({
+    const confirmedTotalSum = await prisma.challan.aggregate({
       where: { status: 'CONFIRMED' },
       _sum: { totalAmount: true },
     });

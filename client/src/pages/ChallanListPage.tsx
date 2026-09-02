@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { SalesChallan, ChallanStatus } from '../types';
+import { Challan, ChallanStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 import {
   FileText,
@@ -17,7 +17,7 @@ import {
 
 export const ChallanListPage: React.FC = () => {
   const { hasRole } = useAuth();
-  const [challans, setChallans] = useState<SalesChallan[]>([]);
+  const [challans, setChallans] = useState<Challan[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');

@@ -159,7 +159,7 @@ export const ChallanCreatePage: React.FC = () => {
             <option value="">-- Choose Customer --</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} — {c.businessName} ({c.type})
+                {c.name} — {c.businessName} ({c.customerType})
               </option>
             ))}
           </select>

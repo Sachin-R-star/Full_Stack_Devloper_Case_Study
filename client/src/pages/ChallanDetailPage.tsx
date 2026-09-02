@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { SalesChallan, SalesChallanItem } from '../types';
+import { Challan, ChallanItem } from '../types';
 import { useAuth } from '../context/AuthContext';
 import {
   ArrowLeft,
@@ -19,7 +19,7 @@ export const ChallanDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { hasRole } = useAuth();
 
-  const [challan, setChallan] = useState<SalesChallan | null>(null);
+  const [challan, setChallan] = useState<Challan | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
@@ -195,13 +195,13 @@ export const ChallanDetailPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {challan.items?.map((item: SalesChallanItem, index: number) => (
+                {challan.items?.map((item: ChallanItem, index: number) => (
                   <tr key={item.id} className="hover:bg-slate-50/50">
                     <td className="py-3 px-4 text-slate-400 font-mono">{index + 1}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-900">{item.snapshotName}</td>
-                    <td className="py-3 px-4 font-mono text-slate-500">{item.snapshotSku}</td>
+                    <td className="py-3 px-4 font-semibold text-slate-900">{item.productNameSnapshot}</td>
+                    <td className="py-3 px-4 font-mono text-slate-500">{item.skuSnapshot}</td>
                     <td className="py-3 px-4 text-slate-700">
-                      ₹{Number(item.snapshotPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{Number(item.unitPriceSnapshot).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-4 text-center font-bold text-slate-900">{item.quantity}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-900">

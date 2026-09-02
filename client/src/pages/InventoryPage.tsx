@@ -227,7 +227,7 @@ export const InventoryPage: React.FC = () => {
                 </tr>
               ) : (
                 products.map((p) => {
-                  const isLow = p.currentStock <= p.minStockAlertQty;
+                  const isLow = p.currentStock <= p.minimumStock;
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4">
@@ -250,7 +250,7 @@ export const InventoryPage: React.FC = () => {
                           {isLow && (
                             <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] px-2 py-0.5 rounded font-semibold">
                               <AlertTriangle className="h-3 w-3 text-amber-600" />
-                              <span>Min: {p.minStockAlertQty}</span>
+                              <span>Min: {p.minimumStock}</span>
                             </span>
                           )}
                         </div>
@@ -258,7 +258,7 @@ export const InventoryPage: React.FC = () => {
                       <td className="py-3 px-4 text-slate-600">
                         <div className="flex items-center space-x-1.5">
                           <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                          <span>{p.location}</span>
+                          <span>{p.warehouseLocation}</span>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">

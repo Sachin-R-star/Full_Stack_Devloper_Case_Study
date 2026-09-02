@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { StockMovementLog } from '../types';
+import { StockMovement } from '../types';
 import { History, ArrowDownLeft, ArrowUpRight, Filter, Search } from 'lucide-react';
 
 export const StockMovementPage: React.FC = () => {
-  const [logs, setLogs] = useState<StockMovementLog[]>([]);
+  const [logs, setLogs] = useState<StockMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [movementFilter, setMovementFilter] = useState('');
 
@@ -106,7 +106,7 @@ export const StockMovementPage: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3 px-4 font-bold text-sm text-slate-900">
-                      {log.movementType === 'IN' ? `+${log.quantity}` : `-${log.quantity}`}
+                      {log.movementType === 'IN' ? `+${log.quantityChanged}` : `-${log.quantityChanged}`}
                     </td>
                     <td className="py-3 px-4 text-slate-700 font-medium">{log.reason}</td>
                     <td className="py-3 px-4 text-slate-600">

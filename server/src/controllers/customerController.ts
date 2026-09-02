@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { prisma } from '../config/db';
-import { AuthRequest } from '../middlewares/auth';
+import { AuthRequest } from '../middlewares/auth.middleware';
 
 export const getCustomers = async (req: AuthRequest, res: Response) => {
   try {
@@ -23,7 +23,7 @@ export const getCustomers = async (req: AuthRequest, res: Response) => {
     }
 
     if (type) {
-      where.type = type;
+      where.customerType = type;
     }
 
     if (status) {
@@ -106,7 +106,8 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       email,
       businessName,
       gstNumber,
-      type = 'RETAIL',
+      customerType,
+      type,
       address,
       status = 'LEAD',
       followUpDate,
@@ -124,7 +125,7 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
         email: email || null,
         businessName,
         gstNumber: gstNumber || null,
-        type,
+        customerType: customerType || type || 'RETAIL',
         address,
         status,
         followUpDate: followUpDate ? new Date(followUpDate) : null,
@@ -147,6 +148,7 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
       email,
       businessName,
       gstNumber,
+      customerType,
       type,
       address,
       status,
@@ -159,6 +161,8 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Customer not found' });
     }
 
+    const cType = customerType || type;
+
     const updatedCustomer = await prisma.customer.update({
       where: { id },
       data: {
@@ -167,7 +171,7 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
         ...(email !== undefined && { email: email || null }),
         ...(businessName !== undefined && { businessName }),
         ...(gstNumber !== undefined && { gstNumber: gstNumber || null }),
-        ...(type !== undefined && { type }),
+        ...(cType !== undefined && { customerType: cType }),
         ...(address !== undefined && { address }),
         ...(status !== undefined && { status }),
         ...(followUpDate !== undefined && { followUpDate: followUpDate ? new Date(followUpDate) : null }),

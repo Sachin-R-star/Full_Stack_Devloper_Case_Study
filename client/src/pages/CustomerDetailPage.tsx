@@ -107,7 +107,7 @@ export const CustomerDetailPage: React.FC = () => {
             <h3 className="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center justify-between">
               <span>Customer Overview</span>
               <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-800">
-                {customer.type}
+                {customer.customerType}
               </span>
             </h3>
 

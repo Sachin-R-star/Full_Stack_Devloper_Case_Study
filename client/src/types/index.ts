@@ -20,7 +20,7 @@ export interface Customer {
   email?: string | null;
   businessName: string;
   gstNumber?: string | null;
-  type: CustomerType;
+  customerType: CustomerType;
   address: string;
   status: CustomerStatus;
   followUpDate?: string | null;
@@ -53,17 +53,17 @@ export interface Product {
   category: string;
   unitPrice: number;
   currentStock: number;
-  minStockAlertQty: number;
-  location: string;
+  minimumStock: number;
+  warehouseLocation: string;
   isLowStock?: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface StockMovementLog {
+export interface StockMovement {
   id: string;
   productId: string;
-  quantity: number;
+  quantityChanged: number;
   movementType: StockMovementType;
   reason: string;
   createdById: string;
@@ -81,23 +81,23 @@ export interface StockMovementLog {
   };
 }
 
-export interface SalesChallanItem {
+export interface ChallanItem {
   id: string;
   challanId: string;
   productId: string;
-  snapshotName: string;
-  snapshotSku: string;
-  snapshotPrice: number;
+  productNameSnapshot: string;
+  skuSnapshot: string;
+  unitPriceSnapshot: number;
   quantity: number;
   subtotal: number;
   product?: {
     id: string;
     currentStock: number;
-    minStockAlertQty: number;
+    minimumStock: number;
   };
 }
 
-export interface SalesChallan {
+export interface Challan {
   id: string;
   challanNumber: string;
   customerId: string;
@@ -109,7 +109,7 @@ export interface SalesChallan {
   updatedAt: string;
   customer?: Customer;
   createdBy?: User;
-  items?: SalesChallanItem[];
+  items?: ChallanItem[];
   _count?: {
     items: number;
   };
