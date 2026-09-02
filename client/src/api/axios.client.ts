@@ -1,13 +1,13 @@
 import axios from 'axios';
 
-export const api = axios.create({
-  baseURL: '/api',
+export const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-api.interceptors.request.use(
+apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('erp_token');
     if (token) {
@@ -18,15 +18,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-api.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('erp_token');
       localStorage.removeItem('erp_user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
     }
     return Promise.reject(error);
   }

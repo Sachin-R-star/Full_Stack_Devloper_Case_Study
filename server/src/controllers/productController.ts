@@ -230,7 +230,7 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
           quantity: qty,
           movementType: movementType as StockMovementType,
           reason: reason.trim(),
-          createdById: req.user.id,
+          createdById: req.user!.id,
         },
         include: {
           createdBy: { select: { id: true, name: true, role: true } },
