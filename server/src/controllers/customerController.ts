@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
-import { CustomerType, CustomerStatus } from '@prisma/client';
 
 export const getCustomers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -17,19 +16,19 @@ export const getCustomers = async (req: AuthRequest, res: Response, next: NextFu
     if (search) {
       const query = (search as string).trim();
       where.OR = [
-        { name: { contains: query, mode: 'insensitive' } },
-        { businessName: { contains: query, mode: 'insensitive' } },
-        { mobile: { contains: query, mode: 'insensitive' } },
-        { email: { contains: query, mode: 'insensitive' } },
+        { name: { contains: query } },
+        { businessName: { contains: query } },
+        { mobile: { contains: query } },
+        { email: { contains: query } },
       ];
     }
 
     if (customerType) {
-      where.customerType = customerType as CustomerType;
+      where.customerType = customerType as string;
     }
 
     if (status) {
-      where.status = status as CustomerStatus;
+      where.status = status as string;
     }
 
     const [total, customers] = await Promise.all([
@@ -122,9 +121,9 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
         email: email || null,
         businessName,
         gstNumber: gstNumber || null,
-        customerType: customerType as CustomerType,
+        customerType: customerType as string,
         address,
-        status: status as CustomerStatus,
+        status: status as string,
         followUpDate: followUpDate ? new Date(followUpDate) : null,
         notes: notes || null,
       },

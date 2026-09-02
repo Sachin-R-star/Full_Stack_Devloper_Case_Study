@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { Role } from '@prisma/client';
 import { env } from '../config/env';
 import { AppError } from './error.middleware';
+
+export type Role = 'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS';
 
 export interface AuthenticatedUserPayload {
   id: string;

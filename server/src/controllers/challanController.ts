@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
-import { ChallanStatus, StockMovementType } from '@prisma/client';
 
 const generateChallanNumber = async (): Promise<string> => {
   const year = new Date().getFullYear();
@@ -38,7 +37,7 @@ export const getChallans = async (req: AuthRequest, res: Response, next: NextFun
     const where: any = {};
 
     if (status) {
-      where.status = status as ChallanStatus;
+      where.status = status as string;
     }
 
     if (customerId) {
@@ -48,9 +47,9 @@ export const getChallans = async (req: AuthRequest, res: Response, next: NextFun
     if (search) {
       const query = (search as string).trim();
       where.OR = [
-        { challanNumber: { contains: query, mode: 'insensitive' } },
-        { customer: { name: { contains: query, mode: 'insensitive' } } },
-        { customer: { businessName: { contains: query, mode: 'insensitive' } } },
+        { challanNumber: { contains: query } },
+        { customer: { name: { contains: query } } },
+        { customer: { businessName: { contains: query } } },
       ];
     }
 
@@ -147,7 +146,6 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
           throw new AppError(`Invalid quantity for product '${product.name}'.`, 400);
         }
 
-        // If status is CONFIRMED, validate stock for ALL products before updating
         if (status === 'CONFIRMED' && product.currentStock < qty) {
           throw new AppError(
             `Insufficient stock for product '${product.name}' (SKU: ${product.sku}). Available: ${product.currentStock}, Requested: ${qty}. Transaction aborted to prevent negative stock.`,
@@ -161,7 +159,6 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
         totalQuantity += qty;
         totalAmount += subtotal;
 
-        // Product snapshot preservation
         challanItemsData.push({
           productId: product.id,
           productNameSnapshot: product.name,
@@ -178,7 +175,7 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
         data: {
           challanNumber,
           customerId,
-          status: status as ChallanStatus,
+          status: status as string,
           totalQuantity,
           totalAmount,
           createdById: req.user!.id,
@@ -192,7 +189,6 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
         },
       });
 
-      // If CONFIRMED, atomic stock deduction & OUT movement log
       if (status === 'CONFIRMED') {
         for (const item of challanItemsData) {
           await tx.product.update({
@@ -206,7 +202,7 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
             data: {
               productId: item.productId,
               quantityChanged: item.quantity,
-              movementType: StockMovementType.OUT,
+              movementType: 'OUT',
               reason: `Sales Challan Confirmation (${challanNumber})`,
               createdById: req.user!.id,
             },
@@ -254,7 +250,6 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
         throw new AppError('Cancelled challans cannot be reactivated.', 400);
       }
 
-      // Transition DRAFT -> CONFIRMED
       if (challan.status === 'DRAFT' && status === 'CONFIRMED') {
         for (const item of challan.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
@@ -267,18 +262,16 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
             );
           }
 
-          // Atomic stock decrement
           await tx.product.update({
             where: { id: item.productId },
             data: { currentStock: { decrement: item.quantity } },
           });
 
-          // Log OUT movement
           await tx.stockMovement.create({
             data: {
               productId: item.productId,
               quantityChanged: item.quantity,
-              movementType: StockMovementType.OUT,
+              movementType: 'OUT',
               reason: `Sales Challan Confirmation (${challan.challanNumber})`,
               createdById: req.user!.id,
             },
@@ -286,21 +279,18 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
         }
       }
 
-      // Transition CONFIRMED -> CANCELLED (Restocks items, does NOT reduce stock)
       if (challan.status === 'CONFIRMED' && status === 'CANCELLED') {
         for (const item of challan.items) {
-          // Restore stock
           await tx.product.update({
             where: { id: item.productId },
             data: { currentStock: { increment: item.quantity } },
           });
 
-          // Log IN movement
           await tx.stockMovement.create({
             data: {
               productId: item.productId,
               quantityChanged: item.quantity,
-              movementType: StockMovementType.IN,
+              movementType: 'IN',
               reason: `Sales Challan Cancellation Restock (${challan.challanNumber})`,
               createdById: req.user!.id,
             },
@@ -310,7 +300,7 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
 
       const updatedChallan = await tx.challan.update({
         where: { id },
-        data: { status: status as ChallanStatus },
+        data: { status: status as string },
         include: { customer: true, items: true },
       });
 

@@ -1,130 +1,104 @@
-import { PrismaClient, Role, CustomerType, CustomerStatus, StockMovementType, ChallanStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Phase 2 Database Seeding...');
+  console.log('🌱 Seeding database...');
 
-  // Clear existing records
-  await prisma.challanItem.deleteMany();
-  await prisma.challan.deleteMany();
-  await prisma.stockMovement.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.followUpNote.deleteMany();
-  await prisma.customer.deleteMany();
-  await prisma.user.deleteMany();
+  // 1. Seed demo users for all 4 roles
+  const passwordHash = await bcrypt.hash('password123', 10);
 
-  // Create password hashes
-  const adminPasswordHash = await bcrypt.hash('admin123', 10);
-  const salesPasswordHash = await bcrypt.hash('sales123', 10);
-  const warehousePasswordHash = await bcrypt.hash('warehouse123', 10);
-  const accountsPasswordHash = await bcrypt.hash('accounts123', 10);
+  const users = [
+    { name: 'System Admin', email: 'admin@company.com', role: 'ADMIN' },
+    { name: 'Sales Representative', email: 'sales@company.com', role: 'SALES' },
+    { name: 'Warehouse Manager', email: 'warehouse@company.com', role: 'WAREHOUSE' },
+    { name: 'Accounts Officer', email: 'accounts@company.com', role: 'ACCOUNTS' },
+  ];
 
-  // 1. Seed One User for each Role
-  const admin = await prisma.user.create({
-    data: {
-      name: 'Alex Rivera (Admin)',
-      email: 'admin@company.com',
-      passwordHash: adminPasswordHash,
-      role: Role.ADMIN,
-    },
-  });
+  for (const u of users) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {},
+      create: {
+        name: u.name,
+        email: u.email,
+        passwordHash,
+        role: u.role,
+      },
+    });
+  }
 
-  const sales = await prisma.user.create({
-    data: {
-      name: 'Sarah Connor (Sales)',
-      email: 'sales@company.com',
-      passwordHash: salesPasswordHash,
-      role: Role.SALES,
-    },
-  });
-
-  const warehouse = await prisma.user.create({
-    data: {
-      name: 'Marcus Vance (Warehouse)',
-      email: 'warehouse@company.com',
-      passwordHash: warehousePasswordHash,
-      role: Role.WAREHOUSE,
-    },
-  });
-
-  const accounts = await prisma.user.create({
-    data: {
-      name: 'Rachel Zane (Accounts)',
-      email: 'accounts@company.com',
-      passwordHash: accountsPasswordHash,
-      role: Role.ACCOUNTS,
-    },
-  });
-
-  console.log('✅ Users created for all 4 roles: Admin, Sales, Warehouse, Accounts');
-
-  // 2. Seed Sample Customers
-  const customer1 = await prisma.customer.create({
-    data: {
-      name: 'Rajesh Kumar',
+  // 2. Seed sample customers
+  const customer1 = await prisma.customer.upsert({
+    where: { id: 'cust-101' },
+    update: {},
+    create: {
+      id: 'cust-101',
+      name: 'Rajesh Sharma',
       mobile: '+91 9876543210',
       email: 'rajesh@apexwholesalers.com',
       businessName: 'Apex Wholesalers Pvt Ltd',
-      gstNumber: '07AAAAA0000A1Z5',
-      customerType: CustomerType.DISTRIBUTOR,
-      address: 'Plot 45, Industrial Area Phase II, New Delhi',
-      status: CustomerStatus.ACTIVE,
-      followUpDate: new Date(Date.now() + 86400000 * 3),
-      notes: 'Key distributor for Northern Region.',
+      gstNumber: '27AABCU9603R1ZM',
+      customerType: 'DISTRIBUTOR',
+      address: 'Plot 42, Industrial Area Phase 1, Mumbai, MH',
+      status: 'ACTIVE',
+      notes: 'Key distributor for West region',
     },
   });
 
-  const customer2 = await prisma.customer.create({
-    data: {
-      name: 'Priya Sharma',
-      mobile: '+91 9811223344',
-      email: 'priya@sharmaretail.com',
+  const customer2 = await prisma.customer.upsert({
+    where: { id: 'cust-102' },
+    update: {},
+    create: {
+      id: 'cust-102',
+      name: 'Priya Verma',
+      mobile: '+91 9123456789',
+      email: 'priya@sharmastores.in',
       businessName: 'Sharma Superstore Chain',
-      gstNumber: '27BBBCA1111B1Z2',
-      customerType: CustomerType.WHOLESALE,
-      address: 'Shop 12-14, Main Market, New Delhi',
-      status: CustomerStatus.ACTIVE,
-      followUpDate: new Date(Date.now() + 86400000 * 1),
-      notes: 'Interested in electronic item catalogue.',
+      gstNumber: '07BABCU9603R1ZN',
+      customerType: 'WHOLESALE',
+      address: 'Shop 12-15, Main Market, Connaught Place, New Delhi',
+      status: 'LEAD',
+      notes: 'Follow up required for bulk discount',
     },
   });
 
-  console.log('✅ Sample Customers created');
-
-  // 3. Seed Sample Products
-  const product1 = await prisma.product.create({
-    data: {
+  // 3. Seed sample products
+  const product1 = await prisma.product.upsert({
+    where: { sku: 'TOOL-DRL-800' },
+    update: {},
+    create: {
       name: 'Heavy Duty Power Drill 800W',
-      sku: 'PWR-DRL-800',
+      sku: 'TOOL-DRL-800',
       category: 'Power Tools',
-      unitPrice: 3499.00,
-      currentStock: 120,
-      minimumStock: 15,
-      warehouseLocation: 'Warehouse A - Bay 04',
+      unitPrice: 3499.0,
+      currentStock: 45,
+      minimumStock: 10,
+      warehouseLocation: 'Rack A-12',
     },
   });
 
-  const product2 = await prisma.product.create({
-    data: {
+  const product2 = await prisma.product.upsert({
+    where: { sku: 'ELEC-MSO-020' },
+    update: {},
+    create: {
       name: 'Wireless Ergonomic Mouse X20',
-      sku: 'ACC-MSE-X20',
+      sku: 'ELEC-MSO-020',
       category: 'Electronics',
-      unitPrice: 899.00,
-      currentStock: 8,
-      minimumStock: 20,
-      warehouseLocation: 'Warehouse B - Shelf 12',
+      unitPrice: 899.0,
+      currentStock: 5, // Below minimum stock trigger!
+      minimumStock: 15,
+      warehouseLocation: 'Bin E-04',
     },
   });
 
-  console.log('✅ Sample Products created');
-  console.log('🎉 Phase 2 Database seeding completed!');
+  console.log('✅ Seeding completed successfully.');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error('Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {

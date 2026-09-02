@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
-import { StockMovementType } from '@prisma/client';
 
 export const getStockMovements = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -14,7 +13,7 @@ export const getStockMovements = async (req: AuthRequest, res: Response, next: N
 
     const where: any = {};
     if (productId) where.productId = productId as string;
-    if (movementType) where.movementType = movementType as StockMovementType;
+    if (movementType) where.movementType = movementType as string;
 
     const [total, logs] = await Promise.all([
       prisma.stockMovement.count({ where }),
@@ -58,7 +57,7 @@ export const createStockMovement = async (req: AuthRequest, res: Response, next:
     const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({ where: { id: productId } });
       if (!product) {
-        throw new AppError('Product not found', 444);
+        throw new AppError('Product not found in catalog', 404);
       }
 
       let newStock = product.currentStock;
@@ -83,7 +82,7 @@ export const createStockMovement = async (req: AuthRequest, res: Response, next:
         data: {
           productId,
           quantityChanged: qty,
-          movementType: movementType as StockMovementType,
+          movementType: movementType as 'IN' | 'OUT',
           reason: reason.trim(),
           createdById: req.user!.id,
         },

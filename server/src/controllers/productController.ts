@@ -1,8 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
-import { StockMovementType } from '@prisma/client';
 
 export const getProducts = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -17,9 +16,9 @@ export const getProducts = async (req: AuthRequest, res: Response, next: NextFun
     if (search) {
       const query = (search as string).trim();
       where.OR = [
-        { name: { contains: query, mode: 'insensitive' } },
-        { sku: { contains: query, mode: 'insensitive' } },
-        { category: { contains: query, mode: 'insensitive' } },
+        { name: { contains: query } },
+        { sku: { contains: query } },
+        { category: { contains: query } },
       ];
     }
 
@@ -133,7 +132,7 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
           data: {
             productId: created.id,
             quantityChanged: parsedStock,
-            movementType: StockMovementType.IN,
+            movementType: 'IN',
             reason: 'Initial Product Stock Entry',
             createdById: req.user.id,
           },
