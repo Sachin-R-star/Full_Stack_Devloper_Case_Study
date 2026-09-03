@@ -85,7 +85,7 @@ export const DashboardPage: React.FC = () => {
         {(user?.role === 'ADMIN' || user?.role === 'SALES') && (
           <Link
             to="/challans/new"
-            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all shadow-sm"
+            className="inline-flex items-center space-x-2 bg-red-700 hover:bg-red-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all shadow-sm"
           >
             <PlusCircle className="h-4 w-4" />
             <span>Create Sales Challan</span>
@@ -119,7 +119,7 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Customers</span>
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+            <div className="p-2 bg-red-50 text-red-700 rounded-lg">
               <Users className="h-5 w-5" />
             </div>
           </div>
@@ -163,7 +163,7 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Confirmed Revenue</span>
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+            <div className="p-2 bg-red-50 text-red-700 rounded-lg">
               <TrendingUp className="h-5 w-5" />
             </div>
           </div>
@@ -181,12 +181,12 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <FileText className="h-4 w-4 text-blue-600" />
+              <FileText className="h-4 w-4 text-red-700" />
               <h3 className="text-sm font-bold text-slate-900">Recent Sales Challans</h3>
             </div>
             <Link
               to="/challans"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+              className="text-xs font-semibold text-red-700 hover:text-red-800 flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -213,7 +213,7 @@ export const DashboardPage: React.FC = () => {
                 ) : (
                   recentChallans.map((ch) => (
                     <tr key={ch.id} className="hover:bg-slate-50">
-                      <td className="py-2.5 px-3 font-bold text-blue-600 font-mono">
+                      <td className="py-2.5 px-3 font-bold text-red-700 font-mono">
                         <Link to={`/challans/${ch.id}`}>{ch.challanNumber}</Link>
                       </td>
                       <td className="py-2.5 px-3 font-medium text-slate-900">
@@ -252,7 +252,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <Link
               to="/inventory"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+              className="text-xs font-semibold text-red-700 hover:text-red-800 flex items-center space-x-1"
             >
               <span>View Audit Log</span>
               <ArrowUpRight className="h-3.5 w-3.5" />

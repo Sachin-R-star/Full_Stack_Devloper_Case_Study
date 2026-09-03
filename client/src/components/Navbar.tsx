@@ -23,7 +23,7 @@ export const Navbar: React.FC = () => {
       case 'ADMIN':
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'SALES':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'WAREHOUSE':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'ACCOUNTS':
@@ -40,7 +40,7 @@ export const Navbar: React.FC = () => {
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center space-x-3">
-          <div className="bg-blue-600 text-white p-2 rounded-xl shadow-sm">
+          <div className="bg-red-700 text-white p-2 rounded-xl shadow-sm">
             <Layers className="h-5 w-5" />
           </div>
           <div>
@@ -54,7 +54,7 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center space-x-3" ref={dropdownRef}>
             {orgName && (
               <div className="hidden md:flex items-center space-x-1.5 px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200">
-                <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                <Building2 className="h-3.5 w-3.5 text-red-700" />
                 <span>{orgName}</span>
               </div>
             )}
@@ -65,7 +65,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center space-x-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-red-700 text-white font-bold text-xs flex items-center justify-center shadow-sm">
                   {user.name.charAt(0)}
                 </div>
                 <div className="hidden sm:block text-left leading-tight">
@@ -94,7 +94,7 @@ export const Navbar: React.FC = () => {
                     <Link
                       to="/settings/team"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center space-x-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                      className="flex items-center space-x-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-red-700 transition-colors"
                     >
                       <UserCheck className="h-4 w-4 text-slate-400" />
                       <span>Team Members</span>
@@ -103,7 +103,7 @@ export const Navbar: React.FC = () => {
                     <Link
                       to="/settings/organization"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center space-x-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                      className="flex items-center space-x-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-red-700 transition-colors"
                     >
                       <Building2 className="h-4 w-4 text-slate-400" />
                       <span>Organization Settings</span>

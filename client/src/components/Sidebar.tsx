@@ -75,7 +75,7 @@ export const Sidebar: React.FC = () => {
       <div className="space-y-6">
         {/* Workspace Organization Badge */}
         <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-3 flex items-center space-x-3">
-          <div className="p-2 bg-blue-600/20 text-blue-400 rounded-lg">
+          <div className="p-2 bg-red-700/20 text-red-400 rounded-lg">
             <Building2 className="h-4 w-4" />
           </div>
           <div className="overflow-hidden">
@@ -99,7 +99,7 @@ export const Sidebar: React.FC = () => {
                   className={({ isActive }) =>
                     `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       isActive
-                        ? 'bg-blue-600 text-white font-semibold shadow-sm'
+                        ? 'bg-red-700 text-white font-semibold shadow-sm'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     }`
                   }
@@ -129,7 +129,7 @@ export const Sidebar: React.FC = () => {
 
       <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700 text-xs text-slate-400 space-y-1">
         <div className="flex items-center space-x-1.5 font-medium text-slate-200">
-          <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
+          <ShieldCheck className="h-3.5 w-3.5 text-red-400" />
           <span>Active Role Session</span>
         </div>
         <p className="text-[11px] leading-tight">

@@ -21,7 +21,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center max-w-md mx-auto my-8 shadow-sm space-y-4">
-      <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
+      <div className="w-12 h-12 bg-red-50 text-red-700 rounded-2xl flex items-center justify-center mx-auto border border-red-100">
         <Icon className="h-6 w-6" />
       </div>
       <div className="space-y-1">
@@ -34,14 +34,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {actionPath ? (
             <Link
               to={actionPath}
-              className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-all"
+              className="inline-flex items-center space-x-2 bg-red-700 hover:bg-red-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-all"
             >
               <span>{actionLabel}</span>
             </Link>
           ) : (
             <button
               onClick={onActionClick}
-              className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-all"
+              className="inline-flex items-center space-x-2 bg-red-700 hover:bg-red-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-all"
             >
               <span>{actionLabel}</span>
             </button>

@@ -160,7 +160,7 @@ export const TeamManagementPage: React.FC = () => {
       case 'ADMIN':
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'SALES':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'WAREHOUSE':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'ACCOUNTS':
@@ -189,7 +189,7 @@ export const TeamManagementPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 flex items-center space-x-2">
-            <Users className="h-6 w-6 text-blue-600" />
+            <Users className="h-6 w-6 text-red-700" />
             <span>Team Members & Organization Access</span>
           </h2>
           <p className="text-sm text-slate-500 mt-1">
@@ -202,7 +202,7 @@ export const TeamManagementPage: React.FC = () => {
               setCreatedInviteUrl('');
               setIsInviteModalOpen(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-lg text-sm shadow-sm transition-all flex items-center space-x-2 self-start sm:self-auto"
+            className="bg-red-700 hover:bg-red-800 text-white font-semibold px-4 py-2.5 rounded-lg text-sm shadow-sm transition-all flex items-center space-x-2 self-start sm:self-auto"
           >
             <UserPlus className="h-4 w-4" />
             <span>Invite Team Member</span>
@@ -259,13 +259,13 @@ export const TeamManagementPage: React.FC = () => {
                 return (
                   <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-6 py-4 font-semibold text-slate-900 flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-bold text-xs">
+                      <div className="w-8 h-8 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-red-700 font-bold text-xs">
                         {m.name.charAt(0)}
                       </div>
                       <div>
                         <span>{m.name}</span>
                         {isSelf && (
-                          <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                          <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">
                             You
                           </span>
                         )}
@@ -292,7 +292,7 @@ export const TeamManagementPage: React.FC = () => {
                               setNewRole(m.role as Role);
                               setIsRoleModalOpen(true);
                             }}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2.5 py-1 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                            className="text-xs text-red-700 hover:text-red-800 font-semibold px-2.5 py-1 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
                           >
                             Change Role
                           </button>
@@ -377,7 +377,7 @@ export const TeamManagementPage: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 border border-slate-200 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
-                <UserPlus className="h-5 w-5 text-blue-600" />
+                <UserPlus className="h-5 w-5 text-red-700" />
                 <span>Invite New Team Member</span>
               </h3>
               <button
@@ -406,7 +406,7 @@ export const TeamManagementPage: React.FC = () => {
                     />
                     <button
                       onClick={() => copyToClipboard(createdInviteUrl)}
-                      className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center space-x-1 flex-shrink-0"
+                      className="bg-red-700 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-red-800 transition-colors flex items-center space-x-1 flex-shrink-0"
                     >
                       {copiedToken ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                       <span>{copiedToken ? 'Copied' : 'Copy Link'}</span>
@@ -431,7 +431,7 @@ export const TeamManagementPage: React.FC = () => {
                     placeholder="colleague@company.com"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
                   />
                 </div>
 
@@ -440,7 +440,7 @@ export const TeamManagementPage: React.FC = () => {
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as Role)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
                   >
                     <option value="SALES">SALES — Customer CRM & Challan Management</option>
                     <option value="WAREHOUSE">WAREHOUSE — Inventory Stock Control</option>
@@ -460,7 +460,7 @@ export const TeamManagementPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={inviting}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+                    className="bg-red-700 hover:bg-red-800 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
                   >
                     {inviting ? 'Generating Invitation...' : 'Send Invitation'}
                   </button>
@@ -477,7 +477,7 @@ export const TeamManagementPage: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 border border-slate-200 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-blue-600" />
+                <Shield className="h-5 w-5 text-red-700" />
                 <span>Change Member Role</span>
               </h3>
               <button
@@ -497,7 +497,7 @@ export const TeamManagementPage: React.FC = () => {
               <select
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value as Role)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
               >
                 <option value="SALES">SALES — Customer CRM & Challan Management</option>
                 <option value="WAREHOUSE">WAREHOUSE — Inventory Stock Control</option>
@@ -518,7 +518,7 @@ export const TeamManagementPage: React.FC = () => {
                 type="button"
                 onClick={handleUpdateRole}
                 disabled={updatingRole}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="bg-red-700 hover:bg-red-800 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 {updatingRole ? 'Updating Role...' : 'Save Role'}
               </button>

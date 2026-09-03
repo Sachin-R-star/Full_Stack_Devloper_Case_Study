@@ -89,20 +89,20 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl border border-blue-800/40 p-6 text-white shadow-xl relative overflow-hidden space-y-5">
+    <div className="bg-gradient-to-r from-slate-900 via-red-950 to-slate-900 rounded-2xl border border-red-800/40 p-6 text-white shadow-xl relative overflow-hidden space-y-5">
       {/* Background Decorative Blur */}
-      <div className="absolute -right-12 -top-12 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -right-12 -top-12 w-48 h-48 bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-600/30 border border-blue-500/40 rounded-xl text-blue-400">
+          <div className="p-2 bg-red-700/30 border border-red-500/40 rounded-xl text-red-400">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
             <h3 className="font-bold text-lg text-white flex items-center space-x-2">
               <span>Setup Your Workspace</span>
-              <span className="text-xs bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2.5 py-0.5 rounded-full font-semibold">
+              <span className="text-xs bg-red-500/20 text-red-300 border border-red-400/30 px-2.5 py-0.5 rounded-full font-semibold">
                 {completedCount}/{steps.length} Steps
               </span>
             </h3>
@@ -125,11 +125,11 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
       <div className="space-y-1">
         <div className="flex justify-between text-xs text-slate-400 font-medium">
           <span>Onboarding Progress</span>
-          <span className="text-blue-300 font-semibold">{progressPercent}%</span>
+          <span className="text-red-300 font-semibold">{progressPercent}%</span>
         </div>
         <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700/50">
           <div
-            className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+            className="bg-gradient-to-r from-red-600 to-emerald-400 h-full rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           ></div>
         </div>
@@ -145,14 +145,14 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
               className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between space-y-3 ${
                 s.completed
                   ? 'bg-slate-800/40 border-emerald-500/30 text-slate-300'
-                  : 'bg-slate-800/80 border-slate-700 text-white hover:border-blue-500/50'
+                  : 'bg-slate-800/80 border-slate-700 text-white hover:border-red-500/50'
               }`}
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div
                     className={`p-1.5 rounded-lg ${
-                      s.completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-600/20 text-blue-400'
+                      s.completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-700/20 text-red-400'
                     }`}
                   >
                     <StepIcon className="h-4 w-4" />
@@ -173,7 +173,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
               {s.action && !s.completed && (
                 <Link
                   to={s.action.path}
-                  className="mt-2 text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center space-x-1 group pt-1"
+                  className="mt-2 text-xs font-semibold text-red-400 hover:text-red-300 flex items-center space-x-1 group pt-1"
                 >
                   <span>{s.action.label}</span>
                   <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />

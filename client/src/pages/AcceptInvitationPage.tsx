@@ -90,7 +90,7 @@ export const AcceptInvitationPage: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-blue-600/20 border border-blue-500/30 rounded-2xl text-blue-400 mb-2">
+          <div className="inline-flex p-3 bg-red-700/20 border border-red-500/30 rounded-2xl text-red-400 mb-2">
             <Layers className="h-8 w-8" />
           </div>
           <h1 className="text-2xl font-bold text-white">Join Workspace</h1>
@@ -112,13 +112,13 @@ export const AcceptInvitationPage: React.FC = () => {
         {invitation && (
           <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
             {/* Invitation Banner */}
-            <div className="bg-blue-950/40 border border-blue-800/40 rounded-2xl p-4 flex items-center space-x-3">
-              <Building2 className="h-6 w-6 text-blue-400 flex-shrink-0" />
+            <div className="bg-red-950/40 border border-red-800/40 rounded-2xl p-4 flex items-center space-x-3">
+              <Building2 className="h-6 w-6 text-red-400 flex-shrink-0" />
               <div>
-                <div className="text-xs text-blue-300 font-medium">You have been invited to join</div>
+                <div className="text-xs text-red-300 font-medium">You have been invited to join</div>
                 <div className="text-base font-bold text-white">{invitation.organizationName}</div>
                 <div className="text-[11px] text-slate-400 mt-0.5">
-                  Assigned Role: <span className="text-blue-300 uppercase font-semibold">{invitation.role}</span>
+                  Assigned Role: <span className="text-red-300 uppercase font-semibold">{invitation.role}</span>
                 </div>
               </div>
             </div>
@@ -144,7 +144,7 @@ export const AcceptInvitationPage: React.FC = () => {
                     placeholder="Jane Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -160,7 +160,7 @@ export const AcceptInvitationPage: React.FC = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -176,7 +176,7 @@ export const AcceptInvitationPage: React.FC = () => {
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -184,7 +184,7 @@ export const AcceptInvitationPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 mt-2"
+                className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-red-700/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 mt-2"
               >
                 <span>{submitting ? 'Creating Account...' : 'Accept Invitation & Complete Setup'}</span>
                 <ArrowRight className="h-4 w-4" />
@@ -195,7 +195,7 @@ export const AcceptInvitationPage: React.FC = () => {
 
         <div className="text-center text-xs text-slate-500">
           Already have an active account?{' '}
-          <Link to="/login" className="text-blue-400 hover:underline font-semibold">
+          <Link to="/login" className="text-red-400 hover:underline font-semibold">
             Sign In
           </Link>
         </div>

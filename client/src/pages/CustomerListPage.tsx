@@ -138,7 +138,7 @@ export const CustomerListPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-            <Users className="h-6 w-6 text-blue-600" />
+            <Users className="h-6 w-6 text-red-700" />
             <span>Customer CRM Portal</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -149,7 +149,7 @@ export const CustomerListPage: React.FC = () => {
         {hasRole(['ADMIN', 'SALES']) && (
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition-all"
+            className="inline-flex items-center space-x-2 bg-red-700 hover:bg-red-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition-all"
           >
             <Plus className="h-4 w-4" />
             <span>Add New Customer</span>
@@ -166,7 +166,7 @@ export const CustomerListPage: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by customer name, mobile, business, or email..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-600"
           />
         </div>
 
@@ -262,7 +262,7 @@ export const CustomerListPage: React.FC = () => {
                     <td className="py-3 px-4 text-slate-600">
                       {c.followUpDate ? (
                         <div className="flex items-center space-x-1 text-slate-700 font-medium">
-                          <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                          <Calendar className="h-3.5 w-3.5 text-red-700" />
                           <span>{new Date(c.followUpDate).toLocaleDateString()}</span>
                         </div>
                       ) : (
@@ -272,7 +272,7 @@ export const CustomerListPage: React.FC = () => {
                     <td className="py-3 px-4 text-right space-x-2">
                       <Link
                         to={`/customers/${c.id}`}
-                        className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                        className="inline-flex items-center space-x-1 text-red-700 hover:text-red-800 font-semibold px-2 py-1 bg-red-50 hover:bg-red-100 rounded transition-colors"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         <span>View</span>
@@ -327,7 +327,7 @@ export const CustomerListPage: React.FC = () => {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                     placeholder="e.g. Rajesh Kumar"
                   />
                 </div>
@@ -339,7 +339,7 @@ export const CustomerListPage: React.FC = () => {
                     required
                     value={formData.businessName}
                     onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                     placeholder="e.g. Apex Wholesalers"
                   />
                 </div>
@@ -353,7 +353,7 @@ export const CustomerListPage: React.FC = () => {
                     required
                     value={formData.mobile}
                     onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -364,7 +364,7 @@ export const CustomerListPage: React.FC = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                     placeholder="client@company.com"
                   />
                 </div>
@@ -376,7 +376,7 @@ export const CustomerListPage: React.FC = () => {
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as CustomerType })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                   >
                     <option value="RETAIL">Retail</option>
                     <option value="WHOLESALE">Wholesale</option>
@@ -389,7 +389,7 @@ export const CustomerListPage: React.FC = () => {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as CustomerStatus })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                   >
                     <option value="LEAD">Lead</option>
                     <option value="ACTIVE">Active</option>
@@ -403,7 +403,7 @@ export const CustomerListPage: React.FC = () => {
                     type="text"
                     value={formData.gstNumber}
                     onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none font-mono"
                     placeholder="07AAAAA0000A1Z5"
                   />
                 </div>
@@ -416,7 +416,7 @@ export const CustomerListPage: React.FC = () => {
                   rows={2}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                   placeholder="Street address, city, state..."
                 />
               </div>
@@ -427,7 +427,7 @@ export const CustomerListPage: React.FC = () => {
                   type="date"
                   value={formData.followUpDate}
                   onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-red-600 focus:outline-none"
                 />
               </div>
 
@@ -442,7 +442,7 @@ export const CustomerListPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm disabled:opacity-50"
+                  className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg text-xs font-semibold shadow-sm disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : editingCustomer ? 'Update Customer' : 'Create Customer'}
                 </button>

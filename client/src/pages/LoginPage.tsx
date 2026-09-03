@@ -47,8 +47,8 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-brand-50 text-brand-600 rounded-xl mb-1">
-            <Layers className="h-8 w-8 text-blue-600" />
+          <div className="inline-flex p-3 bg-red-50 text-red-700 rounded-xl mb-1">
+            <Layers className="h-8 w-8 text-red-700" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900">Operations Portal Login</h2>
           <p className="text-sm text-slate-500">Sign in to access your Mini ERP + CRM dashboard</p>
@@ -71,7 +71,7 @@ export const LoginPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
               />
             </div>
           </div>
@@ -86,7 +86,7 @@ export const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
               />
             </div>
           </div>
@@ -94,7 +94,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full bg-red-700 hover:bg-red-800 text-white font-semibold py-2.5 rounded-lg text-sm shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
           >
             <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
             <ArrowRight className="h-4 w-4" />
@@ -104,7 +104,7 @@ export const LoginPage: React.FC = () => {
         <div className="pt-2 text-center">
           <p className="text-xs text-slate-500">
             Need a new company workspace?{' '}
-            <Link to="/register" className="font-semibold text-blue-600 hover:underline">
+            <Link to="/register" className="font-semibold text-red-700 hover:underline">
               Register Organization
             </Link>
           </p>
@@ -127,9 +127,9 @@ export const LoginPage: React.FC = () => {
 
             <button
               onClick={() => handleDemoLogin('sales@company.com', 'sales123')}
-              className="text-left p-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg transition-all text-xs"
+              className="text-left p-2.5 bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-300 rounded-lg transition-all text-xs"
             >
-              <div className="font-semibold text-blue-900">Sales Role</div>
+              <div className="font-semibold text-red-900">Sales Role</div>
               <div className="text-[11px] text-slate-500">sales@company.com</div>
             </button>
 
