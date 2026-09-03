@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Layers, ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
 
@@ -48,7 +48,7 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex p-3 bg-brand-50 text-brand-600 rounded-xl mb-1">
-            <Layers className="h-8 w-8" />
+            <Layers className="h-8 w-8 text-blue-600" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900">Operations Portal Login</h2>
           <p className="text-sm text-slate-500">Sign in to access your Mini ERP + CRM dashboard</p>
@@ -94,12 +94,21 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg text-sm shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
           >
             <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         </form>
+
+        <div className="pt-2 text-center">
+          <p className="text-xs text-slate-500">
+            Need a new company workspace?{' '}
+            <Link to="/register" className="font-semibold text-blue-600 hover:underline">
+              Register Organization
+            </Link>
+          </p>
+        </div>
 
         <div className="pt-4 border-t border-slate-100">
           <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-500 mb-3">

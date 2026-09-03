@@ -2,11 +2,20 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role } from '../types';
 import { api } from '../api/client';
 
+export interface RegisterPayload {
+  name: string;
+  companyName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   hasRole: (allowedRoles: Role[]) => boolean;
 }
@@ -50,6 +59,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('erp_user', JSON.stringify(loggedInUser));
   };
 
+  const register = async (payload: RegisterPayload) => {
+    const res = await api.post('/auth/register', payload);
+    const { token: authToken, user: registeredUser } = res.data;
+
+    setToken(authToken);
+    setUser(registeredUser);
+
+    localStorage.setItem('erp_token', authToken);
+    localStorage.setItem('erp_user', JSON.stringify(registeredUser));
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -63,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
