@@ -12,6 +12,7 @@ import { StockMovementPage } from './pages/StockMovementPage';
 import { ChallanListPage } from './pages/ChallanListPage';
 import { ChallanCreatePage } from './pages/ChallanCreatePage';
 import { ChallanDetailPage } from './pages/ChallanDetailPage';
+import { OrganizationSettingsPage } from './pages/OrganizationSettingsPage';
 import { Role } from './types';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: Role[] }> = ({
@@ -124,6 +125,15 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <ChallanDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings/organization"
+            element={
+              <ProtectedRoute>
+                <OrganizationSettingsPage />
               </ProtectedRoute>
             }
           />

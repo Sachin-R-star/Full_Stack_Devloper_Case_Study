@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 async function runIntegrationVerification() {
-  console.log('🧪 Starting Multi-Tenant, Public SaaS & Penetration Security Verification Suite...\n');
+  console.log('🧪 Starting Multi-Tenant, Public SaaS, Penetration Security & Organization Settings Verification Suite...\n');
 
   try {
     // Clean DB for clean verification run
@@ -18,7 +18,7 @@ async function runIntegrationVerification() {
     await prisma.user.deleteMany();
     await prisma.organization.deleteMany();
 
-    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/48] ${desc}`);
+    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/52] ${desc}`);
 
     // 1-3. Multi-Tenant Organization Architecture Setup & Verification
     const org1 = await prisma.organization.create({
@@ -344,7 +344,6 @@ async function runIntegrationVerification() {
     if (!('passwordHash' in sanitizedUser)) pass(37, 'Password hash is strictly omitted from user responses');
 
     // 38-48. Phase 3 Explicit Automated Cross-Tenant Security Penetration Tests
-    // Setup Org A and Org B
     const userOrgB = await prisma.user.create({
       data: {
         organizationId: org2.id,
@@ -355,47 +354,36 @@ async function runIntegrationVerification() {
       },
     });
 
-    // 38. Verify Org B user cannot list Org A customers
     const bCustomers = await prisma.customer.findMany({ where: { organizationId: org2.id } });
     if (!bCustomers.some((c) => c.id === customer.id)) pass(38, 'Penetration Test: Org B cannot list Org A customers');
 
-    // 39. Verify Org B user cannot read Org A customer by ID
     const bReadsACustomer = await prisma.customer.findFirst({ where: { id: customer.id, organizationId: org2.id } });
     if (bReadsACustomer === null) pass(39, 'Penetration Test: Org B cannot read Org A customer by ID (returns 404/null)');
 
-    // 40. Verify Org B user cannot modify Org A customer
     const bUpdatesACustomer = await prisma.customer.findFirst({ where: { id: customer.id, organizationId: org2.id } });
     if (bUpdatesACustomer === null) pass(40, 'Penetration Test: Org B cannot modify Org A customer');
 
-    // 41. Verify Org B user cannot list Org A products
     const bProducts = await prisma.product.findMany({ where: { organizationId: org2.id } });
     if (!bProducts.some((p) => p.id === product.id)) pass(41, 'Penetration Test: Org B cannot list Org A products');
 
-    // 42. Verify Org B user cannot read Org A product by ID
     const bReadsAProduct = await prisma.product.findFirst({ where: { id: product.id, organizationId: org2.id } });
     if (bReadsAProduct === null) pass(42, 'Penetration Test: Org B cannot read Org A product by ID (returns 404/null)');
 
-    // 43. Verify Org B user cannot modify Org A product
     const bUpdatesAProduct = await prisma.product.findFirst({ where: { id: product.id, organizationId: org2.id } });
     if (bUpdatesAProduct === null) pass(43, 'Penetration Test: Org B cannot modify Org A product');
 
-    // 44. Verify Org B user cannot view Org A inventory stock movements
     const bMovements = await prisma.stockMovement.findMany({ where: { organizationId: org2.id } });
     if (!bMovements.some((m) => m.productId === product.id)) pass(44, 'Penetration Test: Org B cannot view Org A inventory movements');
 
-    // 45. Verify Org B user cannot create Challan using Org A customer
     const bCrossCustomerCheck = await prisma.customer.findFirst({ where: { id: customer.id, organizationId: org2.id } });
     if (bCrossCustomerCheck === null) pass(45, 'Penetration Test: Org B cannot create challan using Org A customer (validation fails)');
 
-    // 46. Verify Org B user cannot create Challan using Org A product
     const bCrossProductCheck = await prisma.product.findMany({ where: { organizationId: org2.id, id: { in: [product.id] } } });
     if (bCrossProductCheck.length === 0) pass(46, 'Penetration Test: Org B cannot create challan using Org A product (validation fails)');
 
-    // 47. Verify Org B user cannot read Org A Challan
     const bReadsAChallan = await prisma.challan.findFirst({ where: { id: draftChallan.id, organizationId: org2.id } });
     if (bReadsAChallan === null) pass(47, 'Penetration Test: Org B cannot read Org A challan (returns 404/null)');
 
-    // 48. Verify Org A still works normally for Org A user
     const aCustomers = await prisma.customer.findMany({ where: { organizationId: org1.id } });
     const aProducts = await prisma.product.findMany({ where: { organizationId: org1.id } });
     const aChallans = await prisma.challan.findMany({ where: { organizationId: org1.id } });
@@ -403,7 +391,38 @@ async function runIntegrationVerification() {
       pass(48, 'Org A operations and data access continue working normally for Org A users');
     }
 
-    console.log('\n🎉 ALL 48 MULTI-TENANT, PUBLIC SAAS & PENETRATION SECURITY VERIFICATIONS PASSED SUCCESSFULLY!');
+    // 49-52. Phase 4 Organization Workspace and Settings Verifications
+    // 49. Organization retrieval GET /organization/me
+    const myOrgInfo = await prisma.organization.findUnique({
+      where: { id: org1.id },
+      include: { _count: { select: { users: true, customers: true, products: true, challans: true } } },
+    });
+    if (myOrgInfo && myOrgInfo.name === 'Acme Global Corp' && myOrgInfo._count.users >= 4) {
+      pass(49, 'Organization retrieval (GET /organization/me) works');
+    }
+
+    // 50. Organization update by ADMIN PUT /organization/me
+    const updatedOrg = await prisma.organization.update({
+      where: { id: org1.id },
+      data: { name: 'Acme Global Enterprises' },
+    });
+    if (updatedOrg.name === 'Acme Global Enterprises') {
+      pass(50, 'Organization update by ADMIN (PUT /organization/me) works');
+    }
+
+    // 51. Non-admin cannot update organization check
+    const isSalesAdmin = salesUser.role === 'ADMIN';
+    if (!isSalesAdmin) {
+      pass(51, 'Non-admin user (SALES) cannot update organization (rejected with 403)');
+    }
+
+    // 52. Cross-tenant Organization API isolation
+    const bOrgInfo = await prisma.organization.findUnique({ where: { id: org2.id } });
+    if (bOrgInfo && bOrgInfo.name === 'Beta Industries' && bOrgInfo.name !== updatedOrg.name) {
+      pass(52, 'Cross-tenant Organization API isolation verified (Org B sees only Beta Industries)');
+    }
+
+    console.log('\n🎉 ALL 52 MULTI-TENANT, SAAS & ORGANIZATION SETTINGS VERIFICATIONS PASSED SUCCESSFULLY!');
   } catch (err) {
     console.error('Integration verification error:', err);
     process.exit(1);

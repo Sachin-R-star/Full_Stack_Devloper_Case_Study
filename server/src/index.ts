@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { env } from './config/env';
 import authRoutes from './routes/auth.routes';
+import organizationRoutes from './routes/organizationRoutes';
 import customerRoutes from './routes/customerRoutes';
 import productRoutes from './routes/productRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
@@ -17,6 +18,9 @@ app.use(express.json());
 // Support both /<module> and /api/<module> routes for flexibility
 app.use('/auth', authRoutes);
 app.use('/api/auth', authRoutes);
+
+app.use('/organization', organizationRoutes);
+app.use('/api/organization', organizationRoutes);
 
 app.use('/customers', customerRoutes);
 app.use('/api/customers', customerRoutes);

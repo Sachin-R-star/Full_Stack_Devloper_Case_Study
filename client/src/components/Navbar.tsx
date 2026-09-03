@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User as UserIcon, Shield, Layers } from 'lucide-react';
+import { LogOut, Building2, Layers } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -20,21 +20,30 @@ export const Navbar: React.FC = () => {
     }
   };
 
+  const orgName = user?.organization?.name;
+
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 no-print">
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="bg-brand-600 text-white p-2 rounded-lg shadow-sm">
+          <div className="bg-blue-600 text-white p-2 rounded-lg shadow-sm">
             <Layers className="h-5 w-5" />
           </div>
           <div>
             <h1 className="font-bold text-slate-900 text-base leading-tight">Nexus ERP + CRM</h1>
-            <p className="text-xs text-slate-500 hidden sm:block">Wholesale & Operations Portal</p>
+            <p className="text-xs text-slate-500 hidden sm:block">Multi-Tenant SaaS Operations Portal</p>
           </div>
         </div>
 
         {user && (
           <div className="flex items-center space-x-4">
+            {orgName && (
+              <div className="hidden lg:flex items-center space-x-1.5 px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200">
+                <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                <span>{orgName}</span>
+              </div>
+            )}
+
             <div className="flex items-center space-x-3 border-r border-slate-200 pr-4">
               <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-semibold text-xs">
                 {user.name.charAt(0)}
