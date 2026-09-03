@@ -17,6 +17,8 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
   if (err instanceof ZodError) {
     return res.status(400).json({
       status: 'fail',
@@ -32,9 +34,17 @@ export const errorHandler = (
     });
   }
 
-  console.error('Unhandled Error:', err);
+  // Log error internally for ops monitoring
+  console.error('Unhandled Server Error:', err);
+
+  // In production, mask internal stack traces and raw DB errors
+  const clientMessage = isProduction
+    ? 'An unexpected error occurred. Please try again later.'
+    : err.message || 'Internal Server Error';
+
   return res.status(500).json({
     status: 'error',
-    message: err.message || 'Internal Server Error',
+    message: clientMessage,
+    ...(isProduction ? {} : { stack: err.stack }),
   });
 };

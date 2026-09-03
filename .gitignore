@@ -2,15 +2,21 @@
 node_modules/
 backend/node_modules/
 frontend/node_modules/
+server/node_modules/
+client/node_modules/
 
 # Build outputs
 dist/
 backend/dist/
 frontend/dist/
+server/dist/
+client/dist/
 
 # Environment & Secrets
 .env
 backend/.env
+server/.env
+client/.env
 *.env.local
 
 # IDE & Logs
@@ -24,3 +30,4 @@ yarn-error.log*
 *.db
 *.sqlite
 backend/prisma/*.db
+server/prisma/*.db
