@@ -10,6 +10,7 @@ import {
   PlusCircle,
   ShieldCheck,
   Building2,
+  UserCheck,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -44,6 +45,12 @@ export const Sidebar: React.FC = () => {
       label: 'Sales Challans',
       path: '/challans',
       icon: FileText,
+      roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'],
+    },
+    {
+      label: 'Team Members',
+      path: '/settings/team',
+      icon: UserCheck,
       roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'],
     },
     {

@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { AcceptInvitationPage } from './pages/AcceptInvitationPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CustomerListPage } from './pages/CustomerListPage';
 import { CustomerDetailPage } from './pages/CustomerDetailPage';
@@ -13,6 +14,7 @@ import { ChallanListPage } from './pages/ChallanListPage';
 import { ChallanCreatePage } from './pages/ChallanCreatePage';
 import { ChallanDetailPage } from './pages/ChallanDetailPage';
 import { OrganizationSettingsPage } from './pages/OrganizationSettingsPage';
+import { TeamManagementPage } from './pages/TeamManagementPage';
 import { Role } from './types';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: Role[] }> = ({
@@ -56,6 +58,7 @@ export const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
 
           <Route
             path="/dashboard"
@@ -125,6 +128,15 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <ChallanDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings/team"
+            element={
+              <ProtectedRoute>
+                <TeamManagementPage />
               </ProtectedRoute>
             }
           />

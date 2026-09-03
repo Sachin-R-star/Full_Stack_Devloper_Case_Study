@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  loginWithToken: (token: string, user: User) => void;
   logout: () => void;
   hasRole: (allowedRoles: Role[]) => boolean;
 }
@@ -70,6 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('erp_user', JSON.stringify(registeredUser));
   };
 
+  const loginWithToken = (authToken: string, loggedInUser: User) => {
+    setToken(authToken);
+    setUser(loggedInUser);
+
+    localStorage.setItem('erp_token', authToken);
+    localStorage.setItem('erp_user', JSON.stringify(loggedInUser));
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -83,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, loginWithToken, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
