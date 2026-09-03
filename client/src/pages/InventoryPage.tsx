@@ -2,17 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { Product } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { EmptyState } from '../components/EmptyState';
 import {
   Package,
   Search,
   Plus,
   AlertTriangle,
   MapPin,
-  Tag,
   Edit2,
   X,
-  ArrowUpRight,
-  ArrowDownLeft,
   SlidersHorizontal,
 } from 'lucide-react';
 
@@ -169,7 +167,7 @@ export const InventoryPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-            <Package className="h-6 w-6 text-brand-600" />
+            <Package className="h-6 w-6 text-blue-600" />
             <span>Inventory & Stock Management</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -180,7 +178,7 @@ export const InventoryPage: React.FC = () => {
         {hasRole(['ADMIN', 'WAREHOUSE']) && (
           <button
             onClick={openCreateProductModal}
-            className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition-colors"
+            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition-all"
           >
             <Plus className="h-4 w-4" />
             <span>Add New Product</span>
@@ -197,7 +195,7 @@ export const InventoryPage: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by product name, SKU, or category..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -206,42 +204,42 @@ export const InventoryPage: React.FC = () => {
             type="checkbox"
             checked={lowStockOnly}
             onChange={(e) => setLowStockOnly(e.target.checked)}
-            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
           />
           <AlertTriangle className={`h-4 w-4 ${lowStockOnly ? 'text-amber-600' : 'text-slate-400'}`} />
           <span>Low Stock Alerts Only</span>
         </label>
       </div>
 
-      {/* Inventory Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px] uppercase tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Product / SKU</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Unit Price</th>
-                <th className="py-3 px-4">Current Stock</th>
-                <th className="py-3 px-4">Warehouse Location</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
+      {/* Inventory Table / Empty State */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
+          Loading inventory records...
+        </div>
+      ) : products.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="Your product catalog is empty"
+          description="Add your first SKU item to manage prices, track warehouse stock levels, and issue sales challans."
+          actionLabel="Add First Product"
+          onActionClick={openCreateProductModal}
+        />
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px] uppercase tracking-wider">
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    Loading inventory records...
-                  </td>
+                  <th className="py-3 px-4">Product / SKU</th>
+                  <th className="py-3 px-4">Category</th>
+                  <th className="py-3 px-4">Unit Price</th>
+                  <th className="py-3 px-4">Current Stock</th>
+                  <th className="py-3 px-4">Warehouse Location</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
-              ) : products.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    No products found matching criteria.
-                  </td>
-                </tr>
-              ) : (
-                products.map((p) => {
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {products.map((p) => {
                   const isLow = p.currentStock <= p.minimumStock;
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 transition-colors">
@@ -281,7 +279,7 @@ export const InventoryPage: React.FC = () => {
                           <>
                             <button
                               onClick={() => openStockAdjustModal(p)}
-                              className="inline-flex items-center space-x-1 text-brand-600 hover:text-brand-800 font-semibold px-2 py-1 bg-brand-50 hover:bg-brand-100 rounded transition-colors"
+                              className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
                             >
                               <SlidersHorizontal className="h-3.5 w-3.5" />
                               <span>Adjust Stock</span>
@@ -299,12 +297,12 @@ export const InventoryPage: React.FC = () => {
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Add / Edit Product Modal */}
       {isProductModalOpen && (
@@ -336,7 +334,7 @@ export const InventoryPage: React.FC = () => {
                   required
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="e.g. Heavy Duty Power Drill 800W"
                 />
               </div>
@@ -349,7 +347,7 @@ export const InventoryPage: React.FC = () => {
                     required
                     value={productForm.sku}
                     onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono uppercase"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono uppercase"
                     placeholder="PWR-DRL-800"
                   />
                 </div>
@@ -361,7 +359,7 @@ export const InventoryPage: React.FC = () => {
                     required
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     placeholder="Power Tools"
                   />
                 </div>
@@ -376,7 +374,7 @@ export const InventoryPage: React.FC = () => {
                     required
                     value={productForm.unitPrice}
                     onChange={(e) => setProductForm({ ...productForm, unitPrice: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     placeholder="3499.00"
                   />
                 </div>
@@ -389,7 +387,7 @@ export const InventoryPage: React.FC = () => {
                       required
                       value={productForm.initialStock}
                       onChange={(e) => setProductForm({ ...productForm, initialStock: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
                 )}
@@ -401,7 +399,7 @@ export const InventoryPage: React.FC = () => {
                     required
                     value={productForm.minStockAlertQty}
                     onChange={(e) => setProductForm({ ...productForm, minStockAlertQty: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -413,7 +411,7 @@ export const InventoryPage: React.FC = () => {
                   required
                   value={productForm.location}
                   onChange={(e) => setProductForm({ ...productForm, location: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="Warehouse A - Bay 04"
                 />
               </div>
@@ -429,7 +427,7 @@ export const InventoryPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingProduct}
-                  className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-sm disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm disabled:opacity-50"
                 >
                   {savingProduct ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
                 </button>
@@ -474,7 +472,7 @@ export const InventoryPage: React.FC = () => {
                   <select
                     value={adjustForm.movementType}
                     onChange={(e) => setAdjustForm({ ...adjustForm, movementType: e.target.value as 'IN' | 'OUT' })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="IN">IN (Add Stock)</option>
                     <option value="OUT">OUT (Reduce Stock)</option>
@@ -489,7 +487,7 @@ export const InventoryPage: React.FC = () => {
                     required
                     value={adjustForm.quantity}
                     onChange={(e) => setAdjustForm({ ...adjustForm, quantity: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -501,7 +499,7 @@ export const InventoryPage: React.FC = () => {
                   required
                   value={adjustForm.reason}
                   onChange={(e) => setAdjustForm({ ...adjustForm, reason: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-brand-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. Purchase Shipment PO-901, Stock Damage Correction"
                 />
               </div>
@@ -517,7 +515,7 @@ export const InventoryPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingAdjust}
-                  className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-sm disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm disabled:opacity-50"
                 >
                   {savingAdjust ? 'Adjusting...' : 'Record Adjustment'}
                 </button>

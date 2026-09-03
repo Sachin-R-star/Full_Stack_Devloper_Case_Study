@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import {
   Users,
   Package,
@@ -9,7 +10,6 @@ import {
   FileCheck,
   TrendingUp,
   ArrowUpRight,
-  ArrowDownLeft,
   Clock,
   PlusCircle,
   FileText,
@@ -23,28 +23,28 @@ export const DashboardPage: React.FC = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const [repRes, chRes] = await Promise.all([
-          api.get('/reports/dashboard'),
-          api.get('/challans?limit=5'),
-        ]);
-        setData(repRes.data.summary);
-        setRecentChallans(chRes.data.data);
-      } catch (err: any) {
-        console.error('Error fetching dashboard summary:', err);
-        setError('Failed to load dashboard overview');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboard();
   }, []);
 
+  const fetchDashboard = async () => {
+    try {
+      const [repRes, chRes] = await Promise.all([
+        api.get('/reports/dashboard'),
+        api.get('/challans?limit=5'),
+      ]);
+      setData(repRes.data.summary);
+      setRecentChallans(chRes.data.data);
+    } catch (err: any) {
+      console.error('Error fetching dashboard summary:', err);
+      setError('Failed to load dashboard overview');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64 text-slate-500 text-sm">
+      <div className="flex justify-center items-center h-64 text-slate-500 text-sm font-medium">
         Loading operations overview...
       </div>
     );
@@ -58,8 +58,21 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
+  const customerCount = data?.customers?.total || 0;
+  const productCount = data?.inventory?.totalProducts || 0;
+  const memberCount = data?.summary?.users?.total || 1; // Default to at least 1
+  const challanCount = data?.challans?.total || 0;
+
   return (
     <div className="space-y-6">
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist
+        customerCount={customerCount}
+        productCount={productCount}
+        memberCount={memberCount}
+        challanCount={challanCount}
+      />
+
       {/* Welcome Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
@@ -72,7 +85,7 @@ export const DashboardPage: React.FC = () => {
         {(user?.role === 'ADMIN' || user?.role === 'SALES') && (
           <Link
             to="/challans/new"
-            className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors shadow-sm"
+            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all shadow-sm"
           >
             <PlusCircle className="h-4 w-4" />
             <span>Create Sales Challan</span>
@@ -110,7 +123,7 @@ export const DashboardPage: React.FC = () => {
               <Users className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{data?.customers?.total || 0}</div>
+          <div className="text-2xl font-bold text-slate-900">{customerCount}</div>
           <div className="flex items-center space-x-3 text-xs text-slate-500 pt-1 border-t border-slate-100">
             <span>Leads: <strong className="text-slate-700">{data?.customers?.lead || 0}</strong></span>
             <span>Active: <strong className="text-emerald-700">{data?.customers?.active || 0}</strong></span>
@@ -125,7 +138,7 @@ export const DashboardPage: React.FC = () => {
               <Package className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{data?.inventory?.totalProducts || 0}</div>
+          <div className="text-2xl font-bold text-slate-900">{productCount}</div>
           <div className="text-xs text-slate-500 pt-1 border-t border-slate-100">
             Low Stock Products: <span className="font-bold text-amber-600">{data?.inventory?.lowStockCount || 0}</span>
           </div>
@@ -139,7 +152,7 @@ export const DashboardPage: React.FC = () => {
               <FileCheck className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{data?.challans?.total || 0}</div>
+          <div className="text-2xl font-bold text-slate-900">{challanCount}</div>
           <div className="flex items-center space-x-3 text-xs text-slate-500 pt-1 border-t border-slate-100">
             <span>Draft: <strong className="text-amber-700">{data?.challans?.draft || 0}</strong></span>
             <span>Confirmed: <strong className="text-emerald-700">{data?.challans?.confirmed || 0}</strong></span>
@@ -150,7 +163,7 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Confirmed Revenue</span>
-            <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
               <TrendingUp className="h-5 w-5" />
             </div>
           </div>
@@ -168,12 +181,12 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <FileText className="h-4 w-4 text-brand-600" />
+              <FileText className="h-4 w-4 text-blue-600" />
               <h3 className="text-sm font-bold text-slate-900">Recent Sales Challans</h3>
             </div>
             <Link
               to="/challans"
-              className="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center space-x-1"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -194,13 +207,13 @@ export const DashboardPage: React.FC = () => {
                 {recentChallans.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-4 text-center text-slate-400">
-                      No sales challans found.
+                      No sales challans created yet.
                     </td>
                   </tr>
                 ) : (
                   recentChallans.map((ch) => (
                     <tr key={ch.id} className="hover:bg-slate-50">
-                      <td className="py-2.5 px-3 font-bold text-brand-600 font-mono">
+                      <td className="py-2.5 px-3 font-bold text-blue-600 font-mono">
                         <Link to={`/challans/${ch.id}`}>{ch.challanNumber}</Link>
                       </td>
                       <td className="py-2.5 px-3 font-medium text-slate-900">
@@ -239,7 +252,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <Link
               to="/inventory"
-              className="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center space-x-1"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
             >
               <span>View Audit Log</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -260,7 +273,7 @@ export const DashboardPage: React.FC = () => {
                 {data?.recentMovements?.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-4 text-center text-slate-400">
-                      No stock movements logged.
+                      No stock movements logged yet.
                     </td>
                   </tr>
                 ) : (

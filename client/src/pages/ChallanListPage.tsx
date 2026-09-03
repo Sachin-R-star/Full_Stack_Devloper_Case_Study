@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { Challan, ChallanStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { EmptyState } from '../components/EmptyState';
 import {
   FileText,
   Search,
@@ -74,7 +75,7 @@ export const ChallanListPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-            <FileText className="h-6 w-6 text-brand-600" />
+            <FileText className="h-6 w-6 text-blue-600" />
             <span>Sales Challan Operations</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -85,7 +86,7 @@ export const ChallanListPage: React.FC = () => {
         {hasRole(['ADMIN', 'SALES']) && (
           <Link
             to="/challans/new"
-            className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition-colors"
+            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition-all"
           >
             <Plus className="h-4 w-4" />
             <span>Create New Challan</span>
@@ -102,7 +103,7 @@ export const ChallanListPage: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by challan number (SCH-2026-0001) or customer business..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -121,38 +122,38 @@ export const ChallanListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px] uppercase tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Challan Number</th>
-                <th className="py-3 px-4">Customer Business</th>
-                <th className="py-3 px-4">Total Qty</th>
-                <th className="py-3 px-4">Total Amount</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Issued Date</th>
-                <th className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
+      {/* Table / Empty State */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
+          Loading sales challans...
+        </div>
+      ) : challans.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="No sales challans issued yet"
+          description="Create your first sales challan to track wholesale orders and automatically deduct inventory stock levels."
+          actionLabel="Create First Challan"
+          actionPath="/challans/new"
+        />
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px] uppercase tracking-wider">
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400">
-                    Loading sales challans...
-                  </td>
+                  <th className="py-3 px-4">Challan Number</th>
+                  <th className="py-3 px-4">Customer Business</th>
+                  <th className="py-3 px-4">Total Qty</th>
+                  <th className="py-3 px-4">Total Amount</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Issued Date</th>
+                  <th className="py-3 px-4 text-right">Action</th>
                 </tr>
-              ) : challans.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400">
-                    No sales challans found.
-                  </td>
-                </tr>
-              ) : (
-                challans.map((ch) => (
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {challans.map((ch) => (
                   <tr key={ch.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-bold text-brand-600 font-mono text-sm">
+                    <td className="py-3 px-4 font-bold text-blue-600 font-mono text-sm">
                       {ch.challanNumber}
                     </td>
                     <td className="py-3 px-4">
@@ -175,19 +176,19 @@ export const ChallanListPage: React.FC = () => {
                     <td className="py-3 px-4 text-right">
                       <Link
                         to={`/challans/${ch.id}`}
-                        className="inline-flex items-center space-x-1 text-brand-600 hover:text-brand-800 font-semibold px-2.5 py-1 bg-brand-50 hover:bg-brand-100 rounded transition-colors"
+                        className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-semibold px-2.5 py-1 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         <span>View Challan</span>
                       </Link>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
