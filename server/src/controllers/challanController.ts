@@ -31,15 +31,18 @@ const generateChallanNumber = async (organizationId: string): Promise<string> =>
 
 export const getChallans = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
+    const organizationId = req.user.organizationId;
     const { status, customerId, search, page = '1', limit = '20' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {
-      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
-    };
+    const where: any = { organizationId };
 
     if (status) {
       where.status = status as string;
@@ -90,12 +93,17 @@ export const getChallans = async (req: AuthRequest, res: Response, next: NextFun
 
 export const getChallanById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
     const { id } = req.params;
+    const organizationId = req.user.organizationId;
 
     const challan = await prisma.challan.findFirst({
       where: {
         id,
-        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+        organizationId,
       },
       include: {
         customer: true,
@@ -120,14 +128,14 @@ export const getChallanById = async (req: AuthRequest, res: Response, next: Next
 
 export const createChallan = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { customerId, items, status = 'DRAFT' } = req.body;
-
     if (!req.user) {
       return next(new AppError('Authentication required', 401));
     }
 
     const organizationId = req.user.organizationId;
+    const { customerId, items, status = 'DRAFT' } = req.body;
 
+    // Validate customer belongs to authenticated user's organization
     const customer = await prisma.customer.findFirst({
       where: { id: customerId, organizationId },
     });
@@ -137,6 +145,8 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
 
     const result = await prisma.$transaction(async (tx) => {
       const productIds = items.map((i: any) => i.productId);
+      
+      // Validate products belong to authenticated user's organization
       const dbProducts = await tx.product.findMany({
         where: { organizationId, id: { in: productIds } },
       });
@@ -185,7 +195,7 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
 
       const createdChallan = await tx.challan.create({
         data: {
-          organizationId,
+          organizationId, // Derived strictly from authenticated JWT context
           challanNumber,
           customerId,
           status: status as string,
@@ -239,14 +249,13 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
 
 export const updateChallan = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-
     if (!req.user) {
       return next(new AppError('Authentication required', 401));
     }
 
+    const { id } = req.params;
     const organizationId = req.user.organizationId;
+    const { status } = req.body;
 
     const updated = await prisma.$transaction(async (tx) => {
       const challan = await tx.challan.findFirst({

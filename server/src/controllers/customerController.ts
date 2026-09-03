@@ -5,15 +5,18 @@ import { AppError } from '../middlewares/error.middleware';
 
 export const getCustomers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
+    const organizationId = req.user.organizationId;
     const { search, customerType, status, page = '1', limit = '20' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {
-      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
-    };
+    const where: any = { organizationId };
 
     if (search) {
       const query = (search as string).trim();
@@ -65,12 +68,17 @@ export const getCustomers = async (req: AuthRequest, res: Response, next: NextFu
 
 export const getCustomerById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
     const { id } = req.params;
+    const organizationId = req.user.organizationId;
 
     const customer = await prisma.customer.findFirst({
       where: {
         id,
-        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+        organizationId,
       },
       include: {
         followUps: {
@@ -110,6 +118,7 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
       return next(new AppError('Authentication required', 401));
     }
 
+    const organizationId = req.user.organizationId;
     const {
       name,
       mobile,
@@ -125,7 +134,7 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
 
     const customer = await prisma.customer.create({
       data: {
-        organizationId: req.user.organizationId,
+        organizationId, // Derived strictly from authenticated JWT context
         name,
         mobile,
         email: email || null,
@@ -151,18 +160,25 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
 
 export const updateCustomer = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
     const { id } = req.params;
-    const updateData = req.body;
+    const organizationId = req.user.organizationId;
 
     const existing = await prisma.customer.findFirst({
       where: {
         id,
-        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+        organizationId,
       },
     });
     if (!existing) {
       return next(new AppError('Customer record not found', 404));
     }
+
+    // Omit any client-supplied organizationId to prevent tenant tampering
+    const { organizationId: _ignoredOrgId, ...updateData } = req.body;
 
     const updatedCustomer = await prisma.customer.update({
       where: { id },
@@ -186,17 +202,18 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
 
 export const addFollowUpNote = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    const { note, nextFollowUpDate } = req.body;
-
     if (!req.user) {
       return next(new AppError('Authentication required', 401));
     }
 
+    const { id } = req.params;
+    const { note, nextFollowUpDate } = req.body;
+    const organizationId = req.user.organizationId;
+
     const customer = await prisma.customer.findFirst({
       where: {
         id,
-        organizationId: req.user.organizationId,
+        organizationId,
       },
     });
     if (!customer) {
@@ -206,7 +223,7 @@ export const addFollowUpNote = async (req: AuthRequest, res: Response, next: Nex
     const [followUpNote] = await prisma.$transaction([
       prisma.followUpNote.create({
         data: {
-          organizationId: req.user.organizationId,
+          organizationId,
           customerId: id,
           userId: req.user.id,
           note: note.trim(),

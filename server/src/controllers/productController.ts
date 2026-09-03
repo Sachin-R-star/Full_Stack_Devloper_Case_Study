@@ -5,15 +5,18 @@ import { AppError } from '../middlewares/error.middleware';
 
 export const getProducts = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
+    const organizationId = req.user.organizationId;
     const { search, category, lowStockOnly, page = '1', limit = '50' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {
-      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
-    };
+    const where: any = { organizationId };
 
     if (search) {
       const query = (search as string).trim();
@@ -62,12 +65,17 @@ export const getProducts = async (req: AuthRequest, res: Response, next: NextFun
 
 export const getProductById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
     const { id } = req.params;
+    const organizationId = req.user.organizationId;
 
     const product = await prisma.product.findFirst({
       where: {
         id,
-        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+        organizationId,
       },
       include: {
         stockMovements: {
@@ -102,6 +110,7 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
       return next(new AppError('Authentication required', 401));
     }
 
+    const organizationId = req.user.organizationId;
     const {
       name,
       sku,
@@ -112,7 +121,6 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
       warehouseLocation,
     } = req.body;
 
-    const organizationId = req.user.organizationId;
     const formattedSku = sku.toUpperCase().trim();
 
     const existingSku = await prisma.product.findFirst({
@@ -129,7 +137,7 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({
         data: {
-          organizationId,
+          organizationId, // Derived strictly from authenticated JWT context
           name: name.trim(),
           sku: formattedSku,
           category: category.trim(),
@@ -168,25 +176,31 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
 
 export const updateProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
     const { id } = req.params;
-    const updateData = req.body;
-    const organizationId = req.user?.organizationId;
+    const organizationId = req.user.organizationId;
 
     const existing = await prisma.product.findFirst({
       where: {
         id,
-        ...(organizationId && { organizationId }),
+        organizationId,
       },
     });
     if (!existing) {
       return next(new AppError('Product not found in catalog', 404));
     }
 
+    // Omit any client-supplied organizationId to prevent tenant tampering
+    const { organizationId: _ignoredOrgId, ...updateData } = req.body;
+
     if (updateData.sku && updateData.sku.toUpperCase().trim() !== existing.sku) {
       const formattedSku = updateData.sku.toUpperCase().trim();
       const skuCheck = await prisma.product.findFirst({
         where: {
-          organizationId: existing.organizationId,
+          organizationId,
           sku: formattedSku,
         },
       });

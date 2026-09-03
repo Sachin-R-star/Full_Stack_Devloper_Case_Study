@@ -1,11 +1,16 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { AppError } from '../middlewares/error.middleware';
 
-export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
+export const getDashboardSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const organizationId = req.user?.organizationId;
-    const orgWhere = organizationId ? { organizationId } : {};
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
+    const organizationId = req.user.organizationId;
+    const orgWhere = { organizationId };
 
     const [
       totalCustomers,
@@ -68,6 +73,6 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error fetching dashboard summary', error: error.message });
+    next(error);
   }
 };

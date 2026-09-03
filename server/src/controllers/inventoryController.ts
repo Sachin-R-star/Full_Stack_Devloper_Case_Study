@@ -5,15 +5,18 @@ import { AppError } from '../middlewares/error.middleware';
 
 export const getStockMovements = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
+    const organizationId = req.user.organizationId;
     const { productId, movementType, page = '1', limit = '50' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {
-      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
-    };
+    const where: any = { organizationId };
 
     if (productId) where.productId = productId as string;
     if (movementType) where.movementType = movementType as string;
@@ -49,13 +52,13 @@ export const getStockMovements = async (req: AuthRequest, res: Response, next: N
 
 export const createStockMovement = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { productId, quantityChanged, movementType, reason } = req.body;
-
     if (!req.user) {
       return next(new AppError('Authentication required', 401));
     }
 
     const organizationId = req.user.organizationId;
+    const { productId, quantityChanged, movementType, reason } = req.body;
+
     const qty = parseInt(quantityChanged, 10);
 
     const result = await prisma.$transaction(async (tx) => {
@@ -86,7 +89,7 @@ export const createStockMovement = async (req: AuthRequest, res: Response, next:
 
       const movement = await tx.stockMovement.create({
         data: {
-          organizationId,
+          organizationId, // Derived strictly from authenticated JWT context
           productId,
           quantityChanged: qty,
           movementType: movementType as 'IN' | 'OUT',
