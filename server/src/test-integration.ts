@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'mini_erp_crm_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 async function runIntegrationVerification() {
   console.log('🧪 Starting Phase 5 Integration Verification Suite...\n');

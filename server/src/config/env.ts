@@ -6,7 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.string().default('5000'),
   DATABASE_URL: z.string(),
-  JWT_SECRET: z.string().default('mini_erp_crm_super_secret_jwt_key_2026'),
+  JWT_SECRET: z.string(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
