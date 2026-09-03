@@ -15,6 +15,7 @@ import { ChallanCreatePage } from './pages/ChallanCreatePage';
 import { ChallanDetailPage } from './pages/ChallanDetailPage';
 import { OrganizationSettingsPage } from './pages/OrganizationSettingsPage';
 import { TeamManagementPage } from './pages/TeamManagementPage';
+import { BillingPage } from './pages/BillingPage';
 import { Role } from './types';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: Role[] }> = ({
@@ -137,6 +138,15 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <TeamManagementPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings/billing"
+            element={
+              <ProtectedRoute>
+                <BillingPage />
               </ProtectedRoute>
             }
           />

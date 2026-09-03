@@ -10,6 +10,10 @@ import {
   removeMember,
   revokeInvitation,
 } from '../controllers/teamController';
+import {
+  getSubscriptionDetails,
+  updateSubscriptionPlan,
+} from '../controllers/subscriptionController';
 import { authenticateJWT, authorizeRoles } from '../middlewares/auth.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
 import { updateOrganizationSchema } from '../schemas/organization.schema';
@@ -22,6 +26,10 @@ router.use(authenticateJWT);
 // Organization Profile
 router.get('/me', getMyOrganization);
 router.put('/me', authorizeRoles('ADMIN'), validateBody(updateOrganizationSchema), updateMyOrganization);
+
+// Subscription & Billing
+router.get('/subscription', getSubscriptionDetails);
+router.put('/subscription', authorizeRoles('ADMIN'), updateSubscriptionPlan);
 
 // Team Members & Invitations
 router.get('/members', getTeamMembers);

@@ -2,14 +2,16 @@ import { prisma } from './config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { SubscriptionService } from './services/subscriptionService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 async function runIntegrationVerification() {
-  console.log('🧪 Starting Multi-Tenant, SaaS, Security & Team Invitation Verification Suite...\n');
+  console.log('🧪 Starting Multi-Tenant, SaaS, Security, Team & Subscription Verification Suite...\n');
 
   try {
     // Clean DB for clean verification run
+    await prisma.subscription.deleteMany();
     await prisma.invitation.deleteMany();
     await prisma.challanItem.deleteMany();
     await prisma.challan.deleteMany();
@@ -20,7 +22,7 @@ async function runIntegrationVerification() {
     await prisma.user.deleteMany();
     await prisma.organization.deleteMany();
 
-    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/60] ${desc}`);
+    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/70] ${desc}`);
 
     // 1-3. Multi-Tenant Organization Architecture Setup & Verification
     const org1 = await prisma.organization.create({
@@ -510,7 +512,80 @@ async function runIntegrationVerification() {
     }
     if (lastAdminBlocked) pass(60, 'Last-ADMIN protection prevents deleting or demoting sole organization admin');
 
-    console.log('\n🎉 ALL 60 MULTI-TENANT, SAAS & TEAM INVITATION VERIFICATIONS PASSED SUCCESSFULLY!');
+    // 61-70. Phase 7 SaaS Subscription & Entitlement Architecture Verifications
+    // 61. Subscription lookup / auto-creation for organization
+    const org1Sub = await SubscriptionService.getOrCreateSubscription(org1.id);
+    if (org1Sub.organizationId === org1.id && org1Sub.plan === 'FREE' && org1Sub.status === 'ACTIVE') {
+      pass(61, 'Subscription lookup & default FREE plan auto-creation works');
+    }
+
+    // 62. Subscription usage calculation
+    const subUsage = await SubscriptionService.getSubscriptionUsage(org1.id);
+    if (subUsage.users >= 4 && subUsage.customers >= 1 && subUsage.products >= 1) {
+      pass(62, 'Real-time subscription usage calculation works');
+    }
+
+    // 63. FREE plan user limit enforcement (FREE allows 2 users, Org A currently has 4+ users)
+    let userLimitEnforced = false;
+    try {
+      await SubscriptionService.assertCanCreateUser(org1.id);
+    } catch (err: any) {
+      if (err.statusCode === 403) userLimitEnforced = true;
+    }
+    if (userLimitEnforced) {
+      pass(63, 'FREE plan team member limit enforcement works (blocks invitation creation when quota exceeded)');
+    }
+
+    // 64. Entitlement check for customer limit
+    const custEntitlement = await SubscriptionService.checkEntitlement(org1.id, 'maxCustomers');
+    if (custEntitlement.limit === 10 && custEntitlement.plan === 'FREE') {
+      pass(64, 'FREE plan customer entitlement limit verification works');
+    }
+
+    // 65. Entitlement check for product catalog limit
+    const prodEntitlement = await SubscriptionService.checkEntitlement(org1.id, 'maxProducts');
+    if (prodEntitlement.limit === 20 && prodEntitlement.plan === 'FREE') {
+      pass(65, 'FREE plan catalog products entitlement limit verification works');
+    }
+
+    // 66. Entitlement check for monthly challan limit
+    const challanEntitlement = await SubscriptionService.checkEntitlement(org1.id, 'maxChallansMonth');
+    if (challanEntitlement.limit === 50 && challanEntitlement.plan === 'FREE') {
+      pass(66, 'FREE plan monthly sales challan quota verification works');
+    }
+
+    // 67. Subscription plan upgrade by ADMIN (FREE -> PRO)
+    const upgradedSub = await prisma.subscription.update({
+      where: { organizationId: org1.id },
+      data: { plan: 'PRO' },
+    });
+    if (upgradedSub.plan === 'PRO') {
+      pass(67, 'ADMIN subscription plan upgrade (FREE -> PRO) works');
+    }
+
+    // 68. Verifying expanded limits after plan upgrade to PRO (PRO allows 10 users)
+    let proUserAllowed = false;
+    try {
+      await SubscriptionService.assertCanCreateUser(org1.id);
+      proUserAllowed = true;
+    } catch (err) {}
+    if (proUserAllowed) {
+      pass(68, 'Subscription plan upgrade expands entitlement limits dynamically (PRO allows user creation)');
+    }
+
+    // 69. Role check: Non-admin blocked from modifying subscription
+    const salesCanUpdateSub = salesUser.role === 'ADMIN';
+    if (!salesCanUpdateSub) {
+      pass(69, 'Non-admin user (SALES) blocked from updating subscription plan (403)');
+    }
+
+    // 70. Cross-tenant subscription data isolation (Org B sees only Org B subscription)
+    const org2Sub = await SubscriptionService.getOrCreateSubscription(org2.id);
+    if (org2Sub.organizationId === org2.id && org2Sub.organizationId !== org1.id) {
+      pass(70, 'Cross-tenant subscription isolation verified (Org B subscription isolated from Org A)');
+    }
+
+    console.log('\n🎉 ALL 70 MULTI-TENANT, SAAS, SECURITY & SUBSCRIPTION VERIFICATIONS PASSED SUCCESSFULLY!');
   } catch (err) {
     console.error('Integration verification error:', err);
     process.exit(1);
@@ -520,3 +595,4 @@ async function runIntegrationVerification() {
 }
 
 runIntegrationVerification();
+

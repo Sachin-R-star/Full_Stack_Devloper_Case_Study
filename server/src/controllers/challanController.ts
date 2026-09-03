@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
+import { SubscriptionService } from '../services/subscriptionService';
 
 const generateChallanNumber = async (organizationId: string): Promise<string> => {
   const year = new Date().getFullYear();
@@ -133,6 +134,7 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
     }
 
     const organizationId = req.user.organizationId;
+    await SubscriptionService.assertCanCreateChallan(organizationId);
     const { customerId, items, status = 'DRAFT' } = req.body;
 
     // Validate customer belongs to authenticated user's organization

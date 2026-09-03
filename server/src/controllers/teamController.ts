@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
+import { SubscriptionService } from '../services/subscriptionService';
 import {
   InviteUserInput,
   UpdateMemberRoleInput,
@@ -70,6 +71,10 @@ export const createInvitation = async (req: AuthRequest, res: Response, next: Ne
     }
 
     const organizationId = req.user.organizationId;
+    
+    // Enforce Plan Entitlement Limits
+    await SubscriptionService.assertCanCreateUser(organizationId);
+
     const { email, role } = req.body as InviteUserInput;
 
     const normalizedEmail = email.toLowerCase().trim();

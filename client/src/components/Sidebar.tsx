@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Building2,
   UserCheck,
+  CreditCard,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -51,6 +52,12 @@ export const Sidebar: React.FC = () => {
       label: 'Team Members',
       path: '/settings/team',
       icon: UserCheck,
+      roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'],
+    },
+    {
+      label: 'Billing & Subscription',
+      path: '/settings/billing',
+      icon: CreditCard,
       roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'],
     },
     {

@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
+import { SubscriptionService } from '../services/subscriptionService';
 
 export const getCustomers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -119,6 +120,7 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
     }
 
     const organizationId = req.user.organizationId;
+    await SubscriptionService.assertCanCreateCustomer(organizationId);
     const {
       name,
       mobile,
