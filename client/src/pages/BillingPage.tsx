@@ -90,7 +90,7 @@ export const BillingPage: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [updating, setUpdating] = useState(false);
+  const [processingPlan, setProcessingPlan] = useState<'PRO' | 'BUSINESS' | 'FREE' | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
 
   const fetchSubscriptionAndInvoices = async () => {
@@ -115,8 +115,8 @@ export const BillingPage: React.FC = () => {
   }, []);
 
   const handlePlanCheckout = async (newPlan: 'PRO' | 'BUSINESS') => {
-    if (updating || data?.subscription.plan === newPlan) return;
-    setUpdating(true);
+    if (processingPlan !== null || data?.subscription.plan === newPlan) return;
+    setProcessingPlan(newPlan);
     setError('');
     setSuccessMsg('');
 
@@ -124,6 +124,10 @@ export const BillingPage: React.FC = () => {
       // 1. Create checkout order on backend (returns signed orderId, amount, keyId)
       const res = await api.post('/organization/subscription/checkout', { plan: newPlan });
       const order = res.data.order;
+
+      if (!order || !order.orderId) {
+        throw new Error('Failed to create checkout order on server.');
+      }
 
       // 2. Load Razorpay script
       const isScriptLoaded = await loadRazorpayScript();
@@ -133,7 +137,7 @@ export const BillingPage: React.FC = () => {
         const options = {
           key: order.keyId,
           amount: order.amount,
-          currency: order.currency,
+          currency: order.currency || 'INR',
           name: 'Mini ERP + CRM SaaS',
           description: `Upgrade Subscription to ${newPlan} Tier`,
           order_id: order.orderId,
@@ -141,7 +145,7 @@ export const BillingPage: React.FC = () => {
             try {
               // 3. Send payment signature to backend verification endpoint
               const verifyRes = await api.post('/organization/subscription/verify', {
-                orderId: response.razorpay_order_id,
+                orderId: response.razorpay_order_id || order.orderId,
                 paymentId: response.razorpay_payment_id,
                 signature: response.razorpay_signature,
                 plan: newPlan,
@@ -150,9 +154,10 @@ export const BillingPage: React.FC = () => {
               setSuccessMsg(verifyRes.data.message || `Successfully upgraded subscription to ${newPlan}!`);
               await fetchSubscriptionAndInvoices();
             } catch (verifyErr: any) {
+              console.error('Payment verification error:', verifyErr);
               setError(verifyErr.response?.data?.message || 'Payment signature verification failed on backend.');
             } finally {
-              setUpdating(false);
+              setProcessingPlan(null);
             }
           },
           prefill: {
@@ -164,15 +169,20 @@ export const BillingPage: React.FC = () => {
           },
           modal: {
             ondismiss: () => {
-              setUpdating(false);
+              setProcessingPlan(null);
             },
           },
         };
 
         const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (response: any) => {
+          console.error('Razorpay payment failed:', response.error);
+          setError(response.error?.description || 'Payment was canceled or failed in Razorpay modal.');
+          setProcessingPlan(null);
+        });
         rzp.open();
       } else {
-        // Fallback for headless/demo environment: Generate valid HMAC signature matching backend secret
+        // Fallback for headless/demo testing environment: Generate valid HMAC signature matching backend secret
         const paymentId = `pay_demo_${Date.now().toString().substring(5)}`;
         const demoSecret = 'rzp_secret_AntigravityDemo2026KeySecret';
         const signature = await computeHmacSha256(demoSecret, `${order.orderId}|${paymentId}`);
@@ -187,18 +197,18 @@ export const BillingPage: React.FC = () => {
 
         setSuccessMsg(verifyRes.data.message || `Successfully upgraded subscription to ${newPlan}!`);
         await fetchSubscriptionAndInvoices();
-        setUpdating(false);
+        setProcessingPlan(null);
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
-      setError(err.response?.data?.message || 'Failed to initiate checkout session.');
-      setUpdating(false);
+      setError(err.response?.data?.message || err.message || 'Failed to initiate checkout session.');
+      setProcessingPlan(null);
     }
   };
 
   const handleDowngradeFree = async () => {
-    if (updating || data?.subscription.plan === 'FREE') return;
-    setUpdating(true);
+    if (processingPlan !== null || data?.subscription.plan === 'FREE') return;
+    setProcessingPlan('FREE');
     setError('');
     setSuccessMsg('');
 
@@ -209,7 +219,7 @@ export const BillingPage: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update subscription.');
     } finally {
-      setUpdating(false);
+      setProcessingPlan(null);
     }
   };
 
@@ -448,6 +458,9 @@ export const BillingPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((p) => {
             const isCurrent = currentPlan === p.id;
+            const isThisPlanProcessing = processingPlan === p.id;
+            const isAnyPlanProcessing = processingPlan !== null;
+
             return (
               <div
                 key={p.id}
@@ -501,19 +514,21 @@ export const BillingPage: React.FC = () => {
                     p.id === 'FREE' ? (
                       <button
                         onClick={handleDowngradeFree}
-                        disabled={updating}
+                        disabled={isAnyPlanProcessing}
                         className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl transition-all border border-slate-200 disabled:opacity-50"
                       >
-                        Downgrade to Free
+                        {isThisPlanProcessing ? 'Processing Order...' : 'Downgrade to Free'}
                       </button>
                     ) : (
                       <button
                         onClick={() => handlePlanCheckout(p.id as 'PRO' | 'BUSINESS')}
-                        disabled={updating}
+                        disabled={isAnyPlanProcessing}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center justify-center space-x-2"
                       >
                         <Sparkles className="h-4 w-4" />
-                        <span>{updating ? 'Processing Order...' : `Upgrade to ${p.name.split(' ')[0]}`}</span>
+                        <span>
+                          {isThisPlanProcessing ? 'Processing Order...' : `Upgrade to ${p.name.split(' ')[0]}`}
+                        </span>
                       </button>
                     )
                   ) : (

@@ -36,7 +36,42 @@ export class PaymentService {
 
     const priceRupees = priceMap[plan] || 1999;
     const amountPaise = priceRupees * 100;
-    const orderId = `order_${crypto.randomBytes(12).toString('hex')}`;
+    let orderId = `order_${crypto.randomBytes(12).toString('hex')}`;
+
+    // Attempt official Razorpay API order creation if live/test key credentials configured
+    if (KEY_ID && KEY_SECRET && !KEY_ID.includes('AntigravityDemo')) {
+      try {
+        const authHeader = 'Basic ' + Buffer.from(`${KEY_ID}:${KEY_SECRET}`).toString('base64');
+        const response = await fetch('https://api.razorpay.com/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authHeader,
+          },
+          body: JSON.stringify({
+            amount: amountPaise,
+            currency: 'INR',
+            receipt: `rcpt_${organizationId.substring(0, 8)}_${Date.now().toString().substring(7)}`,
+            notes: {
+              organizationId,
+              plan,
+            },
+          }),
+        });
+
+        if (response.ok) {
+          const razorpayOrder: any = await response.json();
+          if (razorpayOrder && razorpayOrder.id) {
+            orderId = razorpayOrder.id;
+          }
+        } else {
+          const errData: any = await response.json().catch(() => ({}));
+          console.warn('Razorpay API order creation notice:', errData.error?.description || response.statusText);
+        }
+      } catch (rzpErr) {
+        console.warn('Razorpay API connection warning, using fallback order ID:', rzpErr);
+      }
+    }
 
     // Store transient external checkout intent on organization's subscription
     await prisma.subscription.upsert({
