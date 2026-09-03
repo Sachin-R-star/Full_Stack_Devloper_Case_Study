@@ -21,6 +21,7 @@ model Organization {
   challans       Challan[]
   invitations    Invitation[]
   subscription   Subscription?
+  invoices       Invoice[]
 }
 
 model Subscription {
@@ -31,11 +32,40 @@ model Subscription {
   startDate              DateTime @default(now())
   renewalDate            DateTime?
   trialEndsAt            DateTime?
+  externalCustomerId     String?
   externalSubscriptionId String?
+  lastPaymentId          String?
+  lastPaymentStatus      String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  payload     String?
+  processedAt DateTime @default(now())
+}
+
+model Invoice {
+  id             String   @id @default(uuid())
+  organizationId String
+  amount         Decimal
+  currency       String   @default("INR")
+  status         String   @default("PAID")
+  plan           String
+  paymentId      String?
+  orderId        String?
+  receiptUrl     String?
+  paidAt         DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 model User {

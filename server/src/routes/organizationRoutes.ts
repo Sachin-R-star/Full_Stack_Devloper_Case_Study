@@ -13,6 +13,9 @@ import {
 import {
   getSubscriptionDetails,
   updateSubscriptionPlan,
+  createCheckoutSession,
+  verifyCheckoutPayment,
+  getSubscriptionInvoices,
 } from '../controllers/subscriptionController';
 import { authenticateJWT, authorizeRoles } from '../middlewares/auth.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
@@ -30,6 +33,9 @@ router.put('/me', authorizeRoles('ADMIN'), validateBody(updateOrganizationSchema
 // Subscription & Billing
 router.get('/subscription', getSubscriptionDetails);
 router.put('/subscription', authorizeRoles('ADMIN'), updateSubscriptionPlan);
+router.post('/subscription/checkout', authorizeRoles('ADMIN'), createCheckoutSession);
+router.post('/subscription/verify', authorizeRoles('ADMIN'), verifyCheckoutPayment);
+router.get('/subscription/invoices', getSubscriptionInvoices);
 
 // Team Members & Invitations
 router.get('/members', getTeamMembers);

@@ -8,12 +8,17 @@ import productRoutes from './routes/productRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import challanRoutes from './routes/challanRoutes';
 import reportRoutes from './routes/reportRoutes';
+import { handleRazorpayWebhook } from './controllers/webhookController';
 import { errorHandler } from './middlewares/error.middleware';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Public Webhooks
+app.post('/webhooks/razorpay', handleRazorpayWebhook);
+app.post('/api/webhooks/razorpay', handleRazorpayWebhook);
 
 // Support both /<module> and /api/<module> routes for flexibility
 app.use('/auth', authRoutes);

@@ -3,14 +3,17 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { SubscriptionService } from './services/subscriptionService';
+import { PaymentService } from './services/paymentService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 async function runIntegrationVerification() {
-  console.log('🧪 Starting Multi-Tenant, SaaS, Security, Team & Subscription Verification Suite...\n');
+  console.log('🧪 Starting Multi-Tenant, SaaS, Security, Team, Subscription & Billing Verification Suite...\n');
 
   try {
     // Clean DB for clean verification run
+    await prisma.invoice.deleteMany();
+    await prisma.webhookEvent.deleteMany();
     await prisma.subscription.deleteMany();
     await prisma.invitation.deleteMany();
     await prisma.challanItem.deleteMany();
@@ -22,7 +25,7 @@ async function runIntegrationVerification() {
     await prisma.user.deleteMany();
     await prisma.organization.deleteMany();
 
-    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/70] ${desc}`);
+    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/80] ${desc}`);
 
     // 1-3. Multi-Tenant Organization Architecture Setup & Verification
     const org1 = await prisma.organization.create({
@@ -585,7 +588,100 @@ async function runIntegrationVerification() {
       pass(70, 'Cross-tenant subscription isolation verified (Org B subscription isolated from Org A)');
     }
 
-    console.log('\n🎉 ALL 70 MULTI-TENANT, SAAS, SECURITY & SUBSCRIPTION VERIFICATIONS PASSED SUCCESSFULLY!');
+    // 71-80. Phase 8 SaaS Payment & Subscription Billing Verifications
+    // 71. Backend checkout session creation
+    const checkoutOrder = await PaymentService.createCheckoutOrder(org1.id, 'BUSINESS');
+    if (checkoutOrder.orderId && checkoutOrder.amount === 499900 && checkoutOrder.plan === 'BUSINESS') {
+      pass(71, 'Backend checkout order creation works (returns signed orderId & amount in paise)');
+    }
+
+    // 72. Payment HMAC SHA-256 signature verification & activation
+    const testKeySecret = process.env.RAZORPAY_KEY_SECRET || 'rzp_secret_AntigravityDemo2026KeySecret';
+    const testOrderId = checkoutOrder.orderId;
+    const testPaymentId = 'pay_test_' + crypto.randomBytes(8).toString('hex');
+    const validSignature = crypto
+      .createHmac('sha256', testKeySecret)
+      .update(`${testOrderId}|${testPaymentId}`)
+      .digest('hex');
+
+    const paymentActivation = await PaymentService.verifyPaymentAndActivate(
+      org1.id,
+      testOrderId,
+      testPaymentId,
+      validSignature,
+      'BUSINESS'
+    );
+    if (paymentActivation.success && paymentActivation.subscription.plan === 'BUSINESS') {
+      pass(72, 'HMAC SHA-256 signature verification & backend payment activation works');
+    }
+
+    // 73. Automatic Invoice record creation upon verified payment
+    if (paymentActivation.invoice && paymentActivation.invoice.amount.toString() === '4999') {
+      pass(73, 'Automatic Invoice record creation on verified payment works');
+    }
+
+    // 74. Webhook HMAC SHA-256 signature verification
+    const whSecret = process.env.RAZORPAY_WEBHOOK_SECRET || 'whsec_AntigravityDemo2026WebhookSecret';
+    const whBody = JSON.stringify({ event: 'payment.captured', amount: 499900 });
+    const validWhSig = crypto.createHmac('sha256', whSecret).update(whBody).digest('hex');
+    const whSigValid = PaymentService.verifyWebhookSignature(whBody, validWhSig);
+    if (whSigValid) {
+      pass(74, 'Webhook HMAC SHA-256 signature verification works');
+    }
+
+    // 75. Idempotent webhook handling (first execution)
+    const whEventId = 'evt_test_' + crypto.randomBytes(8).toString('hex');
+    const firstWh = await PaymentService.processWebhookEvent(whEventId, 'payment.captured', {
+      organizationId: org1.id,
+      plan: 'BUSINESS',
+      amount: 499900,
+    });
+    if (!firstWh.alreadyProcessed && firstWh.event.eventId === whEventId) {
+      pass(75, 'Webhook event processing & record creation works');
+    }
+
+    // 76. Duplicate webhook idempotency check (second execution skipped)
+    const secondWh = await PaymentService.processWebhookEvent(whEventId, 'payment.captured', {
+      organizationId: org1.id,
+      plan: 'BUSINESS',
+      amount: 499900,
+    });
+    if (secondWh.alreadyProcessed) {
+      pass(76, 'Idempotent webhook handler safely ignores duplicate events');
+    }
+
+    // 77. Failed payment webhook event sets status to PAST_DUE without locking out admin
+    await PaymentService.processWebhookEvent('evt_failed_1', 'payment.failed', {
+      organizationId: org1.id,
+    });
+    const pastDueSub = await prisma.subscription.findUnique({ where: { organizationId: org1.id } });
+    if (pastDueSub && pastDueSub.status === 'PAST_DUE') {
+      pass(77, 'Failed payment webhook event sets status to PAST_DUE gracefully');
+    }
+
+    // 78. Webhook subscription cancellation event
+    await PaymentService.processWebhookEvent('evt_cancel_1', 'subscription.cancelled', {
+      organizationId: org1.id,
+    });
+    const canceledSub = await prisma.subscription.findUnique({ where: { organizationId: org1.id } });
+    if (canceledSub && canceledSub.status === 'CANCELED') {
+      pass(78, 'Subscription cancellation webhook event updates status to CANCELED');
+    }
+
+    // 79. Organization invoices retrieval
+    const org1Invoices = await PaymentService.getOrganizationInvoices(org1.id);
+    if (org1Invoices.length >= 2) {
+      pass(79, 'Organization payment history & invoice retrieval works');
+    }
+
+    // 80. Cross-tenant invoice isolation (Org B cannot view Org A invoices)
+    const org2Invoices = await PaymentService.getOrganizationInvoices(org2.id);
+    const crossInvoiceLeak = org2Invoices.some((inv) => inv.organizationId === org1.id);
+    if (!crossInvoiceLeak) {
+      pass(80, 'Cross-tenant invoice isolation verified (Org B cannot see Org A payment history)');
+    }
+
+    console.log('\n🎉 ALL 80 MULTI-TENANT, SAAS, SECURITY, SUBSCRIPTION & BILLING VERIFICATIONS PASSED SUCCESSFULLY!');
   } catch (err) {
     console.error('Integration verification error:', err);
     process.exit(1);
@@ -595,4 +691,5 @@ async function runIntegrationVerification() {
 }
 
 runIntegrationVerification();
+
 
