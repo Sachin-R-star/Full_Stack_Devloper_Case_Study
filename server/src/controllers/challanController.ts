@@ -1,14 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
 
-const generateChallanNumber = async (): Promise<string> => {
+const generateChallanNumber = async (organizationId: string): Promise<string> => {
   const year = new Date().getFullYear();
   const prefix = `SCH-${year}-`;
 
   const lastChallan = await prisma.challan.findFirst({
-    where: { challanNumber: { startsWith: prefix } },
+    where: {
+      organizationId,
+      challanNumber: { startsWith: prefix },
+    },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -34,7 +37,9 @@ export const getChallans = async (req: AuthRequest, res: Response, next: NextFun
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const where: any = {
+      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+    };
 
     if (status) {
       where.status = status as string;
@@ -87,8 +92,11 @@ export const getChallanById = async (req: AuthRequest, res: Response, next: Next
   try {
     const { id } = req.params;
 
-    const challan = await prisma.challan.findUnique({
-      where: { id },
+    const challan = await prisma.challan.findFirst({
+      where: {
+        id,
+        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+      },
       include: {
         customer: true,
         createdBy: { select: { id: true, name: true, email: true, role: true } },
@@ -118,7 +126,11 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
       return next(new AppError('Authentication required', 401));
     }
 
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const organizationId = req.user.organizationId;
+
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, organizationId },
+    });
     if (!customer) {
       return next(new AppError('Selected customer does not exist.', 404));
     }
@@ -126,7 +138,7 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
     const result = await prisma.$transaction(async (tx) => {
       const productIds = items.map((i: any) => i.productId);
       const dbProducts = await tx.product.findMany({
-        where: { id: { in: productIds } },
+        where: { organizationId, id: { in: productIds } },
       });
 
       const productMap = new Map(dbProducts.map((p) => [p.id, p]));
@@ -169,10 +181,11 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
         });
       }
 
-      const challanNumber = await generateChallanNumber();
+      const challanNumber = await generateChallanNumber(organizationId);
 
       const createdChallan = await tx.challan.create({
         data: {
+          organizationId,
           challanNumber,
           customerId,
           status: status as string,
@@ -200,6 +213,7 @@ export const createChallan = async (req: AuthRequest, res: Response, next: NextF
 
           await tx.stockMovement.create({
             data: {
+              organizationId,
               productId: item.productId,
               quantityChanged: item.quantity,
               movementType: 'OUT',
@@ -232,9 +246,11 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
       return next(new AppError('Authentication required', 401));
     }
 
+    const organizationId = req.user.organizationId;
+
     const updated = await prisma.$transaction(async (tx) => {
-      const challan = await tx.challan.findUnique({
-        where: { id },
+      const challan = await tx.challan.findFirst({
+        where: { id, organizationId },
         include: { items: true },
       });
 
@@ -245,8 +261,6 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
       const currentStatus = challan.status;
       const targetStatus = status;
 
-      // Strict Transition Validation:
-      // Allowed: DRAFT -> CONFIRMED, DRAFT -> CANCELLED, CONFIRMED -> CANCELLED
       const isValidTransition =
         (currentStatus === 'DRAFT' && targetStatus === 'CONFIRMED') ||
         (currentStatus === 'DRAFT' && targetStatus === 'CANCELLED') ||
@@ -279,6 +293,7 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
 
           await tx.stockMovement.create({
             data: {
+              organizationId,
               productId: item.productId,
               quantityChanged: item.quantity,
               movementType: 'OUT',
@@ -299,6 +314,7 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
 
           await tx.stockMovement.create({
             data: {
+              organizationId,
               productId: item.productId,
               quantityChanged: item.quantity,
               movementType: 'IN',
@@ -308,8 +324,6 @@ export const updateChallan = async (req: AuthRequest, res: Response, next: NextF
           });
         }
       }
-
-      // Transition: DRAFT -> CANCELLED (Stock remains unchanged)
 
       const updatedChallan = await tx.challan.update({
         where: { id },

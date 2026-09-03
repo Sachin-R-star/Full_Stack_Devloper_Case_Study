@@ -30,6 +30,7 @@ export const login = async (
 
     const payload = {
       id: user.id,
+      organizationId: user.organizationId,
       email: user.email,
       name: user.name,
       role: user.role,
@@ -43,6 +44,7 @@ export const login = async (
       token,
       user: {
         id: user.id,
+        organizationId: user.organizationId,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -63,9 +65,16 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
       where: { id: req.user.id },
       select: {
         id: true,
+        organizationId: true,
         name: true,
         email: true,
         role: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },

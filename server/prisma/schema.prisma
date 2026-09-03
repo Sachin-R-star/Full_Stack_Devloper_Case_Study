@@ -7,93 +7,136 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         String   @default("SALES")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  users          User[]
+  customers      Customer[]
   followUps      FollowUpNote[]
+  products       Product[]
   stockMovements StockMovement[]
   challans       Challan[]
 }
 
-model Customer {
-  id           String    @id @default(uuid())
-  name         String
-  mobile       String
-  email        String?
-  businessName String
-  gstNumber    String?
-  customerType String    @default("RETAIL")
-  address      String
-  status       String    @default("LEAD")
-  followUpDate DateTime?
-  notes        String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+model User {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  email          String       @unique
+  passwordHash   String
+  role           String       @default("SALES")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  followUps FollowUpNote[]
-  challans  Challan[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  followUps      FollowUpNote[]
+  stockMovements StockMovement[]
+  challans       Challan[]
+
+  @@index([organizationId])
+}
+
+model Customer {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  mobile         String
+  email          String?
+  businessName   String
+  gstNumber      String?
+  customerType   String       @default("RETAIL")
+  address        String
+  status         String       @default("LEAD")
+  followUpDate   DateTime?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  followUps      FollowUpNote[]
+  challans       Challan[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
 }
 
 model FollowUpNote {
-  id         String   @id @default(uuid())
-  customerId String
-  userId     String
-  note       String
-  createdAt  DateTime @default(now())
+  id             String       @id @default(uuid())
+  organizationId String
+  customerId     String
+  userId         String
+  note           String
+  createdAt      DateTime     @default(now())
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
 }
 
 model Product {
-  id                String   @id @default(uuid())
+  id                String       @id @default(uuid())
+  organizationId    String
   name              String
-  sku               String   @unique
+  sku               String
   category          String
   unitPrice         Decimal
-  currentStock      Int      @default(0)
-  minimumStock      Int      @default(10)
+  currentStock      Int          @default(0)
+  minimumStock      Int          @default(10)
   warehouseLocation String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   stockMovements StockMovement[]
   challanItems   ChallanItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([organizationId, category])
 }
 
 model StockMovement {
-  id              String   @id @default(uuid())
+  id              String       @id @default(uuid())
+  organizationId  String
   productId       String
   quantityChanged Int
   movementType    String
   reason          String
   createdById     String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime     @default(now())
 
-  product Product @relation(fields: [productId], references: [id])
-  createdBy User   @relation(fields: [createdById], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product        Product      @relation(fields: [productId], references: [id])
+  createdBy      User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
 }
 
 model Challan {
-  id            String   @id @default(uuid())
-  challanNumber String   @unique
-  customerId    String
-  totalQuantity Int      @default(0)
-  totalAmount   Decimal  @default(0)
-  status        String   @default("DRAFT")
-  createdById   String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String
+  challanNumber  String
+  customerId     String
+  totalQuantity  Int          @default(0)
+  totalAmount    Decimal      @default(0)
+  status         String       @default("DRAFT")
+  createdById    String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  customer  Customer      @relation(fields: [customerId], references: [id])
-  createdBy User          @relation(fields: [createdById], references: [id])
-  items     ChallanItem[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  items        ChallanItem[]
+
+  @@unique([organizationId, challanNumber])
+  @@index([organizationId])
+  @@index([organizationId, status])
 }
 
 model ChallanItem {
@@ -108,4 +151,6 @@ model ChallanItem {
 
   challan Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+
+  @@index([challanId])
 }

@@ -6,15 +6,25 @@ export type CustomerStatus = 'LEAD' | 'ACTIVE' | 'INACTIVE';
 export type StockMovementType = 'IN' | 'OUT';
 export type ChallanStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 
+export interface Organization {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface User {
   id: string;
+  organizationId?: string;
   name: string;
   email: string;
   role: Role;
+  organization?: Organization;
 }
 
 export interface Customer {
   id: string;
+  organizationId?: string;
   name: string;
   mobile: string;
   email?: string | null;
@@ -35,6 +45,7 @@ export interface Customer {
 
 export interface FollowUpNote {
   id: string;
+  organizationId?: string;
   customerId: string;
   userId: string;
   note: string;
@@ -48,6 +59,7 @@ export interface FollowUpNote {
 
 export interface Product {
   id: string;
+  organizationId?: string;
   name: string;
   sku: string;
   category: string;
@@ -62,6 +74,7 @@ export interface Product {
 
 export interface StockMovement {
   id: string;
+  organizationId?: string;
   productId: string;
   quantityChanged: number;
   movementType: StockMovementType;
@@ -99,6 +112,7 @@ export interface ChallanItem {
 
 export interface Challan {
   id: string;
+  organizationId?: string;
   challanNumber: string;
   customerId: string;
   status: ChallanStatus;

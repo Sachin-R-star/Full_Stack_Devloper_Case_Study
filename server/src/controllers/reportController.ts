@@ -4,6 +4,9 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 
 export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
   try {
+    const organizationId = req.user?.organizationId;
+    const orgWhere = organizationId ? { organizationId } : {};
+
     const [
       totalCustomers,
       leadCustomers,
@@ -15,15 +18,19 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
       confirmedChallans,
       recentMovements,
     ] = await Promise.all([
-      prisma.customer.count(),
-      prisma.customer.count({ where: { status: 'LEAD' } }),
-      prisma.customer.count({ where: { status: 'ACTIVE' } }),
-      prisma.product.count(),
-      prisma.product.findMany({ select: { id: true, currentStock: true, minimumStock: true } }),
-      prisma.challan.count(),
-      prisma.challan.count({ where: { status: 'DRAFT' } }),
-      prisma.challan.count({ where: { status: 'CONFIRMED' } }),
+      prisma.customer.count({ where: orgWhere }),
+      prisma.customer.count({ where: { ...orgWhere, status: 'LEAD' } }),
+      prisma.customer.count({ where: { ...orgWhere, status: 'ACTIVE' } }),
+      prisma.product.count({ where: orgWhere }),
+      prisma.product.findMany({
+        where: orgWhere,
+        select: { id: true, currentStock: true, minimumStock: true },
+      }),
+      prisma.challan.count({ where: orgWhere }),
+      prisma.challan.count({ where: { ...orgWhere, status: 'DRAFT' } }),
+      prisma.challan.count({ where: { ...orgWhere, status: 'CONFIRMED' } }),
       prisma.stockMovement.findMany({
+        where: orgWhere,
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
@@ -36,7 +43,7 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
     const lowStockCount = allProducts.filter((p) => p.currentStock <= p.minimumStock).length;
 
     const confirmedTotalSum = await prisma.challan.aggregate({
-      where: { status: 'CONFIRMED' },
+      where: { ...orgWhere, status: 'CONFIRMED' },
       _sum: { totalAmount: true },
     });
 

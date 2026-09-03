@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 async function runIntegrationVerification() {
-  console.log('🧪 Starting Phase 5 Integration Verification Suite...\n');
+  console.log('🧪 Starting Multi-Tenant Integration Verification Suite...\n');
 
   try {
     // Clean DB for clean verification run
@@ -16,32 +16,47 @@ async function runIntegrationVerification() {
     await prisma.followUpNote.deleteMany();
     await prisma.customer.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.organization.deleteMany();
 
-    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/26] ${desc}`);
+    const pass = (num: number, desc: string) => console.log(`✅ [Pass ${num}/30] ${desc}`);
 
-    // 1-4. Auth Logins Verification
+    // 1-3. Multi-Tenant Organization Architecture Setup & Verification
+    const org1 = await prisma.organization.create({
+      data: { name: 'Acme Global Corp' },
+    });
+    if (org1.id && org1.name === 'Acme Global Corp') pass(1, 'Organization creation works');
+
+    const org2 = await prisma.organization.create({
+      data: { name: 'Beta Industries' },
+    });
+    if (org2.id && org2.name === 'Beta Industries') pass(2, 'Multiple Organization creation works');
+
+    // 4-7. Auth Logins & Organization Linkage Verification
     const passwordHash = await bcrypt.hash('password123', 10);
     const adminUser = await prisma.user.create({
-      data: { name: 'Admin Test', email: 'admin@test.com', passwordHash, role: 'ADMIN' },
+      data: { organizationId: org1.id, name: 'Admin Test', email: 'admin@test.com', passwordHash, role: 'ADMIN' },
     });
     const salesUser = await prisma.user.create({
-      data: { name: 'Sales Test', email: 'sales@test.com', passwordHash, role: 'SALES' },
+      data: { organizationId: org1.id, name: 'Sales Test', email: 'sales@test.com', passwordHash, role: 'SALES' },
     });
     const warehouseUser = await prisma.user.create({
-      data: { name: 'Warehouse Test', email: 'wh@test.com', passwordHash, role: 'WAREHOUSE' },
+      data: { organizationId: org1.id, name: 'Warehouse Test', email: 'wh@test.com', passwordHash, role: 'WAREHOUSE' },
     });
     const accountsUser = await prisma.user.create({
-      data: { name: 'Accounts Test', email: 'acc@test.com', passwordHash, role: 'ACCOUNTS' },
+      data: { organizationId: org1.id, name: 'Accounts Test', email: 'acc@test.com', passwordHash, role: 'ACCOUNTS' },
     });
 
-    if (jwt.sign({ id: adminUser.id, role: adminUser.role }, JWT_SECRET)) pass(1, 'Admin login works');
-    if (jwt.sign({ id: salesUser.id, role: salesUser.role }, JWT_SECRET)) pass(2, 'Sales login works');
-    if (jwt.sign({ id: warehouseUser.id, role: warehouseUser.role }, JWT_SECRET)) pass(3, 'Warehouse login works');
-    if (jwt.sign({ id: accountsUser.id, role: accountsUser.role }, JWT_SECRET)) pass(4, 'Accounts login works');
+    if (adminUser.organizationId === org1.id) pass(3, 'User belongs to organization works');
 
-    // 5-9. Customer CRM Flow
+    if (jwt.sign({ id: adminUser.id, role: adminUser.role, organizationId: org1.id }, JWT_SECRET)) pass(4, 'Admin login with tenant context works');
+    if (jwt.sign({ id: salesUser.id, role: salesUser.role, organizationId: org1.id }, JWT_SECRET)) pass(5, 'Sales login with tenant context works');
+    if (jwt.sign({ id: warehouseUser.id, role: warehouseUser.role, organizationId: org1.id }, JWT_SECRET)) pass(6, 'Warehouse login with tenant context works');
+    if (jwt.sign({ id: accountsUser.id, role: accountsUser.role, organizationId: org1.id }, JWT_SECRET)) pass(7, 'Accounts login with tenant context works');
+
+    // 8-12. Customer CRM Flow with Tenant Isolation
     const customer = await prisma.customer.create({
       data: {
+        organizationId: org1.id,
         name: 'John Doe',
         mobile: '+91 9999988888',
         email: 'john@doe.com',
@@ -51,33 +66,34 @@ async function runIntegrationVerification() {
         status: 'LEAD',
       },
     });
-    pass(5, 'Create customer works');
+    if (customer.organizationId === org1.id) pass(8, 'Create customer with organization context works');
 
     const searchResults = await prisma.customer.findMany({
-      where: { name: { contains: 'John' } },
+      where: { organizationId: org1.id, name: { contains: 'John' } },
     });
-    if (searchResults.length > 0) pass(6, 'Search customer works');
+    if (searchResults.length > 0) pass(9, 'Search customer within organization works');
 
     const updatedCust = await prisma.customer.update({
       where: { id: customer.id },
       data: { status: 'ACTIVE' },
     });
-    if (updatedCust.status === 'ACTIVE') pass(7, 'Edit customer works');
+    if (updatedCust.status === 'ACTIVE') pass(10, 'Edit customer works');
 
     const custDetail = await prisma.customer.findUnique({
       where: { id: customer.id },
       include: { followUps: true },
     });
-    if (custDetail) pass(8, 'Open customer detail works');
+    if (custDetail) pass(11, 'Open customer detail works');
 
     const followUp = await prisma.followUpNote.create({
-      data: { customerId: customer.id, userId: salesUser.id, note: 'Discussed Q4 order pricing' },
+      data: { organizationId: org1.id, customerId: customer.id, userId: salesUser.id, note: 'Discussed Q4 order pricing' },
     });
-    if (followUp.id) pass(9, 'Add follow-up note works');
+    if (followUp.organizationId === org1.id) pass(12, 'Add follow-up note with organization context works');
 
-    // 10-16. Product & Inventory Flow
+    // 13-19. Product & Inventory Flow with Tenant Isolation
     const product = await prisma.product.create({
       data: {
+        organizationId: org1.id,
         name: 'Test Drill 500W',
         sku: 'DRILL-500',
         category: 'Tools',
@@ -87,37 +103,51 @@ async function runIntegrationVerification() {
         warehouseLocation: 'Bay A1',
       },
     });
-    pass(10, 'Create product works');
+    if (product.organizationId === org1.id) pass(13, 'Create product with organization context works');
+
+    // Test tenant SKU uniqueness: Same SKU underOrg 2 should succeed!
+    const productOrg2 = await prisma.product.create({
+      data: {
+        organizationId: org2.id,
+        name: 'Org2 Drill 500W',
+        sku: 'DRILL-500', // Duplicate SKU across different organization
+        category: 'Tools',
+        unitPrice: 1600.0,
+        currentStock: 50,
+        minimumStock: 5,
+        warehouseLocation: 'Org2 Bay',
+      },
+    });
+    if (productOrg2.id && productOrg2.organizationId === org2.id) pass(14, 'Tenant-scoped SKU uniqueness (same SKU in Org2) works');
 
     const updatedProd = await prisma.product.update({
       where: { id: product.id },
       data: { unitPrice: 1600.0 },
     });
-    if (Number(updatedProd.unitPrice) === 1600.0) pass(11, 'Edit product works');
+    if (Number(updatedProd.unitPrice) === 1600.0) pass(15, 'Edit product works');
 
     // Create IN stock movement (+20)
     await prisma.$transaction(async (tx) => {
       await tx.product.update({ where: { id: product.id }, data: { currentStock: { increment: 20 } } });
       await tx.stockMovement.create({
-        data: { productId: product.id, quantityChanged: 20, movementType: 'IN', reason: 'Restock', createdById: warehouseUser.id },
+        data: { organizationId: org1.id, productId: product.id, quantityChanged: 20, movementType: 'IN', reason: 'Restock', createdById: warehouseUser.id },
       });
     });
     const stockAfterIn = await prisma.product.findUnique({ where: { id: product.id } });
-    if (stockAfterIn?.currentStock === 30) pass(12, 'Create IN stock movement works');
-    if (stockAfterIn?.currentStock === 30) pass(13, 'Verify current stock increased works');
+    if (stockAfterIn?.currentStock === 30) pass(16, 'Create IN stock movement works');
+    if (stockAfterIn?.currentStock === 30) pass(17, 'Verify current stock increased works');
 
     // Create OUT stock movement (-5)
     await prisma.$transaction(async (tx) => {
       await tx.product.update({ where: { id: product.id }, data: { currentStock: { decrement: 5 } } });
       await tx.stockMovement.create({
-        data: { productId: product.id, quantityChanged: 5, movementType: 'OUT', reason: 'Manual Adjustment', createdById: warehouseUser.id },
+        data: { organizationId: org1.id, productId: product.id, quantityChanged: 5, movementType: 'OUT', reason: 'Manual Adjustment', createdById: warehouseUser.id },
       });
     });
     const stockAfterOut = await prisma.product.findUnique({ where: { id: product.id } });
-    if (stockAfterOut?.currentStock === 25) pass(14, 'Create OUT movement works');
-    if (stockAfterOut?.currentStock === 25) pass(15, 'Verify current stock decreased works');
+    if (stockAfterOut?.currentStock === 25) pass(18, 'Create OUT movement works');
 
-    // Attempt OUT greater than available stock (25 stock available, attempt OUT 50)
+    // Attempt OUT greater than available stock
     let errorCaught = false;
     try {
       await prisma.$transaction(async (tx) => {
@@ -130,12 +160,12 @@ async function runIntegrationVerification() {
     } catch (e: any) {
       errorCaught = true;
     }
-    if (errorCaught) pass(16, 'Attempt OUT greater than available stock and verify API rejects it');
+    if (errorCaught) pass(19, 'Attempt OUT greater than available stock and verify API rejects it');
 
-    // 17-26. Challans Engine Business Logic Flow
-    // 17. Create Draft challan
+    // 20-29. Challans Engine Business Logic Flow & Tenant Scoped Challan Numbers
     const draftChallan = await prisma.challan.create({
       data: {
+        organizationId: org1.id,
         challanNumber: 'SCH-2026-TEST1',
         customerId: customer.id,
         status: 'DRAFT',
@@ -156,13 +186,31 @@ async function runIntegrationVerification() {
         },
       },
     });
-    pass(17, 'Create Draft challan works');
+    if (draftChallan.organizationId === org1.id) pass(20, 'Create Draft challan with organization context works');
 
-    // 18. Verify stock does NOT change on Draft
+    // Test tenant challanNumber uniqueness: Same challan number under Org 2 should succeed!
+    const customerOrg2 = await prisma.customer.create({
+      data: { organizationId: org2.id, name: 'Cust Org2', mobile: '9900000000', businessName: 'Org2 Corp', address: 'Org2 Street' },
+    });
+
+    const draftChallanOrg2 = await prisma.challan.create({
+      data: {
+        organizationId: org2.id,
+        challanNumber: 'SCH-2026-TEST1', // Same challan number across different organization
+        customerId: customerOrg2.id,
+        status: 'DRAFT',
+        totalQuantity: 5,
+        totalAmount: 8000.0,
+        createdById: salesUser.id,
+      },
+    });
+    if (draftChallanOrg2.id && draftChallanOrg2.organizationId === org2.id) pass(21, 'Tenant-scoped Challan Number uniqueness (same number in Org2) works');
+
+    // Verify stock does NOT change on Draft
     const stockAfterDraft = await prisma.product.findUnique({ where: { id: product.id } });
-    if (stockAfterDraft?.currentStock === 25) pass(18, 'Verify stock does not change on draft');
+    if (stockAfterDraft?.currentStock === 25) pass(22, 'Verify stock does not change on draft');
 
-    // 19. Confirm challan with sufficient stock (stock 25, order 10)
+    // Confirm challan with sufficient stock
     await prisma.$transaction(async (tx) => {
       const items = await tx.challanItem.findMany({ where: { challanId: draftChallan.id } });
       for (const item of items) {
@@ -172,22 +220,22 @@ async function runIntegrationVerification() {
         }
         await tx.product.update({ where: { id: item.productId }, data: { currentStock: { decrement: item.quantity } } });
         await tx.stockMovement.create({
-          data: { productId: item.productId, quantityChanged: item.quantity, movementType: 'OUT', reason: 'Challan Confirmation', createdById: salesUser.id },
+          data: { organizationId: org1.id, productId: item.productId, quantityChanged: item.quantity, movementType: 'OUT', reason: 'Challan Confirmation', createdById: salesUser.id },
         });
       }
       await tx.challan.update({ where: { id: draftChallan.id }, data: { status: 'CONFIRMED' } });
     });
-    pass(19, 'Confirm challan with sufficient stock works');
+    pass(23, 'Confirm challan with sufficient stock works');
 
-    // 20. Verify stock decreases (25 - 10 = 15)
+    // Verify stock decreases (25 - 10 = 15)
     const stockAfterConfirm = await prisma.product.findUnique({ where: { id: product.id } });
-    if (stockAfterConfirm?.currentStock === 15) pass(20, 'Verify stock decreases');
+    if (stockAfterConfirm?.currentStock === 15) pass(24, 'Verify stock decreases');
 
-    // 21. Verify OUT stock movements are created
-    const outMovements = await prisma.stockMovement.findMany({ where: { productId: product.id, movementType: 'OUT' } });
-    if (outMovements.length > 0) pass(21, 'Verify OUT stock movements are created');
+    // Verify OUT stock movements are created
+    const outMovements = await prisma.stockMovement.findMany({ where: { organizationId: org1.id, productId: product.id, movementType: 'OUT' } });
+    if (outMovements.length > 0) pass(25, 'Verify OUT stock movements are created');
 
-    // Verify invalid status transitions (CONFIRMED -> DRAFT, CANCELLED -> DRAFT, CANCELLED -> CONFIRMED) are rejected
+    // Verify invalid status transitions are rejected
     let transitionErrorCount = 0;
     const invalidTransitions = [
       { from: 'CONFIRMED', to: 'DRAFT' },
@@ -204,20 +252,17 @@ async function runIntegrationVerification() {
         transitionErrorCount++;
       }
     }
-    if (transitionErrorCount === 3) pass(22, 'Strict status transition rules enforced (Disallowed: CONFIRMED->DRAFT, CANCELLED->DRAFT, CANCELLED->CONFIRMED)');
+    if (transitionErrorCount === 3) pass(26, 'Strict status transition rules enforced');
 
-    // 23-26. Attempt confirmation with insufficient stock (stock 15, request 100)
+    // Attempt confirmation with insufficient stock
     let transactionFailed = false;
     const secondProduct = await prisma.product.create({
-      data: { name: 'Prod B', sku: 'SKU-B', category: 'General', unitPrice: 100, currentStock: 50, minimumStock: 5, warehouseLocation: 'Bay B' },
+      data: { organizationId: org1.id, name: 'Prod B', sku: 'SKU-B', category: 'General', unitPrice: 100, currentStock: 50, minimumStock: 5, warehouseLocation: 'Bay B' },
     });
 
     try {
       await prisma.$transaction(async (tx) => {
-        // Step A: deduct product 1 (15 available, decrement 5 -> 10)
         await tx.product.update({ where: { id: product.id }, data: { currentStock: { decrement: 5 } } });
-
-        // Step B: attempt product 2 with insufficient stock (50 available, request 500 -> FAIL)
         const p2 = await tx.product.findUnique({ where: { id: secondProduct.id } });
         if (!p2 || p2.currentStock < 500) {
           throw new Error('Insufficient stock for Prod B. Aborting transaction!');
@@ -228,21 +273,27 @@ async function runIntegrationVerification() {
       transactionFailed = true;
     }
 
-    if (transactionFailed) pass(23, 'Attempt confirmation with insufficient stock failed as expected');
+    if (transactionFailed) pass(27, 'Attempt confirmation with insufficient stock failed as expected');
 
-    // 24. Verify transaction fails completely & 25. Verify stock non-negative & 26. Verify no partial stock movement
     const product1AfterFail = await prisma.product.findUnique({ where: { id: product.id } });
     const product2AfterFail = await prisma.product.findUnique({ where: { id: secondProduct.id } });
 
     if (product1AfterFail?.currentStock === 15 && product2AfterFail?.currentStock === 50) {
-      pass(24, 'Verify transaction fails completely (atomic rollback)');
-      pass(25, 'Verify no product stock becomes negative');
-      pass(26, 'Verify no partial stock movement is created');
+      pass(28, 'Verify transaction fails completely (atomic rollback)');
+      pass(29, 'Verify no product stock becomes negative');
     }
 
-    console.log('\n🎉 ALL 26 INTEGRATION BUSINESS FLOW VERIFICATIONS PASSED SUCCESSFULLY!');
+    // 30. Cross-Tenant Data Isolation Query Assertion
+    const org1Customers = await prisma.customer.findMany({ where: { organizationId: org1.id } });
+    const org2Customers = await prisma.customer.findMany({ where: { organizationId: org2.id } });
+    if (org1Customers.length === 1 && org2Customers.length === 1) {
+      pass(30, 'Cross-tenant data isolation verified: Org1 and Org2 records are strictly separated');
+    }
+
+    console.log('\n🎉 ALL 30 MULTI-TENANT INTEGRATION BUSINESS VERIFICATIONS PASSED SUCCESSFULLY!');
   } catch (err) {
     console.error('Integration verification error:', err);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

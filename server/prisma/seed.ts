@@ -2,7 +2,22 @@ import { prisma } from '../src/config/db';
 import bcrypt from 'bcryptjs';
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 Seeding multi-tenant database...');
+
+  // 0. Seed default organization
+  let organization = await prisma.organization.findFirst({
+    where: { name: 'Acme Corp' },
+  });
+
+  if (!organization) {
+    organization = await prisma.organization.create({
+      data: {
+        name: 'Acme Corp',
+      },
+    });
+  }
+
+  const organizationId = organization.id;
 
   // 1. Seed demo users for all 4 roles
   const passwordHash = await bcrypt.hash('password123', 10);
@@ -17,8 +32,9 @@ async function main() {
   for (const u of users) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: { passwordHash, role: u.role, name: u.name },
+      update: { passwordHash, role: u.role, name: u.name, organizationId },
       create: {
+        organizationId,
         name: u.name,
         email: u.email,
         passwordHash,
@@ -28,11 +44,12 @@ async function main() {
   }
 
   // 2. Seed sample customers
-  const customer1 = await prisma.customer.upsert({
+  await prisma.customer.upsert({
     where: { id: 'cust-101' },
-    update: {},
+    update: { organizationId },
     create: {
       id: 'cust-101',
+      organizationId,
       name: 'Rajesh Sharma',
       mobile: '+91 9876543210',
       email: 'rajesh@apexwholesalers.com',
@@ -45,11 +62,12 @@ async function main() {
     },
   });
 
-  const customer2 = await prisma.customer.upsert({
+  await prisma.customer.upsert({
     where: { id: 'cust-102' },
-    update: {},
+    update: { organizationId },
     create: {
       id: 'cust-102',
+      organizationId,
       name: 'Priya Verma',
       mobile: '+91 9123456789',
       email: 'priya@sharmastores.in',
@@ -63,35 +81,43 @@ async function main() {
   });
 
   // 3. Seed sample products
-  const product1 = await prisma.product.upsert({
-    where: { sku: 'TOOL-DRL-800' },
-    update: {},
-    create: {
-      name: 'Heavy Duty Power Drill 800W',
-      sku: 'TOOL-DRL-800',
-      category: 'Power Tools',
-      unitPrice: 3499.0,
-      currentStock: 45,
-      minimumStock: 10,
-      warehouseLocation: 'Rack A-12',
-    },
+  const product1 = await prisma.product.findFirst({
+    where: { organizationId, sku: 'TOOL-DRL-800' },
   });
+  if (!product1) {
+    await prisma.product.create({
+      data: {
+        organizationId,
+        name: 'Heavy Duty Power Drill 800W',
+        sku: 'TOOL-DRL-800',
+        category: 'Power Tools',
+        unitPrice: 3499.0,
+        currentStock: 45,
+        minimumStock: 10,
+        warehouseLocation: 'Rack A-12',
+      },
+    });
+  }
 
-  const product2 = await prisma.product.upsert({
-    where: { sku: 'ELEC-MSO-020' },
-    update: {},
-    create: {
-      name: 'Wireless Ergonomic Mouse X20',
-      sku: 'ELEC-MSO-020',
-      category: 'Electronics',
-      unitPrice: 899.0,
-      currentStock: 5, // Below minimum stock trigger!
-      minimumStock: 15,
-      warehouseLocation: 'Bin E-04',
-    },
+  const product2 = await prisma.product.findFirst({
+    where: { organizationId, sku: 'ELEC-MSO-020' },
   });
+  if (!product2) {
+    await prisma.product.create({
+      data: {
+        organizationId,
+        name: 'Wireless Ergonomic Mouse X20',
+        sku: 'ELEC-MSO-020',
+        category: 'Electronics',
+        unitPrice: 899.0,
+        currentStock: 5,
+        minimumStock: 15,
+        warehouseLocation: 'Bin E-04',
+      },
+    });
+  }
 
-  console.log('✅ Seeding completed successfully.');
+  console.log('✅ Seeding completed successfully for organization:', organization.name);
 }
 
 main()

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
@@ -11,7 +11,9 @@ export const getCustomers = async (req: AuthRequest, res: Response, next: NextFu
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const where: any = {
+      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+    };
 
     if (search) {
       const query = (search as string).trim();
@@ -65,8 +67,11 @@ export const getCustomerById = async (req: AuthRequest, res: Response, next: Nex
   try {
     const { id } = req.params;
 
-    const customer = await prisma.customer.findUnique({
-      where: { id },
+    const customer = await prisma.customer.findFirst({
+      where: {
+        id,
+        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+      },
       include: {
         followUps: {
           include: {
@@ -101,6 +106,10 @@ export const getCustomerById = async (req: AuthRequest, res: Response, next: Nex
 
 export const createCustomer = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
     const {
       name,
       mobile,
@@ -116,6 +125,7 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
 
     const customer = await prisma.customer.create({
       data: {
+        organizationId: req.user.organizationId,
         name,
         mobile,
         email: email || null,
@@ -144,7 +154,12 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
     const { id } = req.params;
     const updateData = req.body;
 
-    const existing = await prisma.customer.findUnique({ where: { id } });
+    const existing = await prisma.customer.findFirst({
+      where: {
+        id,
+        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+      },
+    });
     if (!existing) {
       return next(new AppError('Customer record not found', 404));
     }
@@ -178,7 +193,12 @@ export const addFollowUpNote = async (req: AuthRequest, res: Response, next: Nex
       return next(new AppError('Authentication required', 401));
     }
 
-    const customer = await prisma.customer.findUnique({ where: { id } });
+    const customer = await prisma.customer.findFirst({
+      where: {
+        id,
+        organizationId: req.user.organizationId,
+      },
+    });
     if (!customer) {
       return next(new AppError('Customer record not found', 404));
     }
@@ -186,6 +206,7 @@ export const addFollowUpNote = async (req: AuthRequest, res: Response, next: Nex
     const [followUpNote] = await prisma.$transaction([
       prisma.followUpNote.create({
         data: {
+          organizationId: req.user.organizationId,
           customerId: id,
           userId: req.user.id,
           note: note.trim(),

@@ -11,7 +11,10 @@ export const getStockMovements = async (req: AuthRequest, res: Response, next: N
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const where: any = {
+      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+    };
+
     if (productId) where.productId = productId as string;
     if (movementType) where.movementType = movementType as string;
 
@@ -52,10 +55,13 @@ export const createStockMovement = async (req: AuthRequest, res: Response, next:
       return next(new AppError('Authentication required', 401));
     }
 
+    const organizationId = req.user.organizationId;
     const qty = parseInt(quantityChanged, 10);
 
     const result = await prisma.$transaction(async (tx) => {
-      const product = await tx.product.findUnique({ where: { id: productId } });
+      const product = await tx.product.findFirst({
+        where: { id: productId, organizationId },
+      });
       if (!product) {
         throw new AppError('Product not found in catalog', 404);
       }
@@ -80,6 +86,7 @@ export const createStockMovement = async (req: AuthRequest, res: Response, next:
 
       const movement = await tx.stockMovement.create({
         data: {
+          organizationId,
           productId,
           quantityChanged: qty,
           movementType: movementType as 'IN' | 'OUT',

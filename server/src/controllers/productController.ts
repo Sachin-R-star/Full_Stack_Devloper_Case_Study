@@ -11,7 +11,9 @@ export const getProducts = async (req: AuthRequest, res: Response, next: NextFun
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const where: any = {
+      ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+    };
 
     if (search) {
       const query = (search as string).trim();
@@ -62,8 +64,11 @@ export const getProductById = async (req: AuthRequest, res: Response, next: Next
   try {
     const { id } = req.params;
 
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const product = await prisma.product.findFirst({
+      where: {
+        id,
+        ...(req.user?.organizationId && { organizationId: req.user.organizationId }),
+      },
       include: {
         stockMovements: {
           include: {
@@ -93,6 +98,10 @@ export const getProductById = async (req: AuthRequest, res: Response, next: Next
 
 export const createProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
     const {
       name,
       sku,
@@ -103,8 +112,11 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
       warehouseLocation,
     } = req.body;
 
-    const existingSku = await prisma.product.findUnique({
-      where: { sku: sku.toUpperCase().trim() },
+    const organizationId = req.user.organizationId;
+    const formattedSku = sku.toUpperCase().trim();
+
+    const existingSku = await prisma.product.findFirst({
+      where: { organizationId, sku: formattedSku },
     });
     if (existingSku) {
       return next(new AppError(`Product SKU '${sku}' already exists in catalog.`, 400));
@@ -117,8 +129,9 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({
         data: {
+          organizationId,
           name: name.trim(),
-          sku: sku.toUpperCase().trim(),
+          sku: formattedSku,
           category: category.trim(),
           unitPrice: parsedPrice,
           currentStock: parsedStock,
@@ -127,14 +140,15 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
         },
       });
 
-      if (parsedStock > 0 && req.user) {
+      if (parsedStock > 0) {
         await tx.stockMovement.create({
           data: {
+            organizationId,
             productId: created.id,
             quantityChanged: parsedStock,
             movementType: 'IN',
             reason: 'Initial Product Stock Entry',
-            createdById: req.user.id,
+            createdById: req.user!.id,
           },
         });
       }
@@ -156,15 +170,25 @@ export const updateProduct = async (req: AuthRequest, res: Response, next: NextF
   try {
     const { id } = req.params;
     const updateData = req.body;
+    const organizationId = req.user?.organizationId;
 
-    const existing = await prisma.product.findUnique({ where: { id } });
+    const existing = await prisma.product.findFirst({
+      where: {
+        id,
+        ...(organizationId && { organizationId }),
+      },
+    });
     if (!existing) {
       return next(new AppError('Product not found in catalog', 404));
     }
 
     if (updateData.sku && updateData.sku.toUpperCase().trim() !== existing.sku) {
-      const skuCheck = await prisma.product.findUnique({
-        where: { sku: updateData.sku.toUpperCase().trim() },
+      const formattedSku = updateData.sku.toUpperCase().trim();
+      const skuCheck = await prisma.product.findFirst({
+        where: {
+          organizationId: existing.organizationId,
+          sku: formattedSku,
+        },
       });
       if (skuCheck) {
         return next(new AppError(`SKU '${updateData.sku}' is already in use by another product.`, 400));

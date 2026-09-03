@@ -7,6 +7,7 @@ export type Role = 'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS';
 
 export interface AuthenticatedUserPayload {
   id: string;
+  organizationId: string;
   email: string;
   name: string;
   role: Role;
